@@ -288,7 +288,7 @@ namespace ExcelExporterImporter.Common
             var row = 3;
             //Inserting rows with values
             foreach (var parameter in projectInformation.Parameters.Cast<Parameter>()
-                .OrderBy(p => p.Definition.ParameterGroup).ThenBy(p => p.Definition.Name))
+                .OrderBy(p => p.Definition.Name))
             {
                 if (cancellationToken.IsCancellationRequested) return;
 
@@ -297,16 +297,12 @@ namespace ExcelExporterImporter.Common
                     continue;
 
                 if (parametersList.Any(c => c.Value == parameter.Definition.Name) || parameter.IsReadOnly ||
-                    parameter.Definition.ParameterType != ParameterType.Text)
+                    !RevitUtilities.IsTextParameter(parameter.Definition))
                     continue;
 
                 worksheet.Cells[row, 1].Value = parameter.Id;
                 worksheet.Cells[row, 2].Value = parameter.Definition.Name;
-#if REVIT2021
-                    var format = RevitUtilities.GetUnitTypeSymbol(doc, parameter.Definition.GetSpecTypeId());
-#else
-                var format = RevitUtilities.GetUnitTypeSymbol(doc, parameter.Definition.UnitType);
-#endif
+                var format = RevitUtilities.GetUnitTypeSymbol(doc, parameter.Definition);
                 format = format.IndexOf(" ") > 0 ? format.Replace(" ", " \"") + "\"" : format;
                 if (!string.IsNullOrEmpty(format)) worksheet.Cells[row, 3].Style.Numberformat.Format = format;
                 if (!parameter.IsReadOnly)

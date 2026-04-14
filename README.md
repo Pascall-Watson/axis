@@ -8,6 +8,29 @@ In the [wiki](https://github.com/bimone/addins-excelexporterimporter/wiki) secti
 
 ![image](https://user-images.githubusercontent.com/7872003/125590861-7183a7e7-d321-418d-b446-5244b73d9785.png)
 
+## pyRevit Hybrid (Revit 2025-2026)
+
+This repository now includes a hybrid migration scaffold under `axis/`:
+
+- pyRevit extension wrapper: `axis/ExcelExporterImporter.extension`
+- Python runtime loader: `axis/ExcelExporterImporter.extension/lib/loader.py`
+- pyRevit command button: `axis/ExcelExporterImporter.extension/Excel Tools.tab/Excel Exporter.panel/Launch.pushbutton/script.py`
+- Build/staging script: `scripts/Build-PyRevitHybrid.ps1`
+
+The C# project now accepts a `RevitVersion` build property (`2025`, `2026`) and publishes version-specific outputs. pyRevit loads the matching DLL and calls `ExcelExporterImporter.Interop.ExcelExporterImporterInterop.ShowMainWindow(doc)`.
+
+### Build and stage for pyRevit
+
+```powershell
+./scripts/Build-PyRevitHybrid.ps1 -Configuration Release
+```
+
+If your Revit installs are not under `%ProgramW6432%\Autodesk`:
+
+```powershell
+./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitInstallRootBase "D:\Autodesk"
+```
+
 
 ## Description
 The Revit add-in Import-Export Excel 2015-2021 allows you to facilitate the management of your data in your digital models by processing it outside of Revit. First, you must export your schedule to an Excel file via the add-in, which allows you to modify your data directly in Excel (or other compatible spreadsheets). Once your information has been modified, all you have to do is import your Excel file via the add-in and your Revit schedule will automatically update with the new data. With this tool, you can ease the data management process by delegating tasks related to the information of digital models to all team members who do not have a Revit license.

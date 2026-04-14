@@ -2,12 +2,10 @@
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
-using System.Windows.Interop;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Windows;
-using ExcelExporterImporter.Views;
+using ExcelExporterImporter.Interop;
 using log4net;
 using IWin32Window = System.Windows.Forms.IWin32Window;
 
@@ -33,11 +31,7 @@ namespace ExcelExporterImporter
             {
                 if (doc == null)
                     return Result.Cancelled;
-                var dlg = new MainWindow(doc);
-
-                var window = new WindowInteropHelper(dlg);
-                window.Owner = ComponentManager.ApplicationWindow;
-                dlg.ShowDialog();
+                ExcelExporterImporterInterop.ShowMainWindow(doc);
 
                 return Result.Succeeded;
             }

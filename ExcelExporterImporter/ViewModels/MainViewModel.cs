@@ -21,6 +21,9 @@ using log4net;
 using OfficeOpenXml;
 using Ookii.Dialogs.Wpf;
 using MessageBox = System.Windows.MessageBox;
+using TaskDialog = Ookii.Dialogs.Wpf.TaskDialog;
+using TaskDialogButton = Ookii.Dialogs.Wpf.TaskDialogButton;
+using TaskDialogIcon = Ookii.Dialogs.Wpf.TaskDialogIcon;
 
 namespace ExcelExporterImporter.ViewModels
 {

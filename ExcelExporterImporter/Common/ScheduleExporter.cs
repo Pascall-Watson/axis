@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -92,7 +92,7 @@ namespace ExcelExporterImporter.Common
         {
             var appliedParameters = parametersSettings.ParametersTranslations
                 .Where(p => p.Location == "*" || p.Location == "ViewSchedule_" + schedule.Name).ToList();
-            var LstParameter = new Dictionary<int, Parameter>();
+            var LstParameter = new Dictionary<long, Parameter>();
             var LstLastTypeFamilly = new Dictionary<string, int>();
             var revitLinksElements = new FilteredElementCollector(doc, schedule.Id)
                 .OfCategory(BuiltInCategory.OST_RvtLinks).ToElementIds();
@@ -102,9 +102,9 @@ namespace ExcelExporterImporter.Common
 
             var bAnalyticalNodesShedule = false;
             var bRvtLinksShedule = false;
-            if (BuiltInCategory.OST_AnalyticalNodes == (BuiltInCategory) schedule.Definition.CategoryId.IntegerValue)
+            if (BuiltInCategory.OST_AnalyticalNodes == (BuiltInCategory) schedule.Definition.CategoryId.Value)
                 bAnalyticalNodesShedule = true;
-            else if (BuiltInCategory.OST_RvtLinks == (BuiltInCategory) schedule.Definition.CategoryId.IntegerValue)
+            else if (BuiltInCategory.OST_RvtLinks == (BuiltInCategory) schedule.Definition.CategoryId.Value)
                 bRvtLinksShedule = true;
             //Excluded revit links
             if (revitLinksElements.Any() && bRvtLinksShedule == false)
@@ -175,8 +175,8 @@ namespace ExcelExporterImporter.Common
                     //We call the method that will get the parameters associated with the cell
                     var parameter = RevitUtilities.GetParameter(doc, element, scheduleField, pElement);
                     if (parameter != null)
-                        if (!LstParameter.ContainsKey(scheduleField.ParameterId.IntegerValue))
-                            LstParameter.Add(scheduleField.ParameterId.IntegerValue, parameter);
+                        if (!LstParameter.ContainsKey(scheduleField.ParameterId.Value))
+                            LstParameter.Add(scheduleField.ParameterId.Value, parameter);
                     //We call the method that will get the rights associated with the cell
                     var readonlyParameter = RevitUtilities.GetIsReadOnly(parameter, scheduleField, readonlyParameters);
                     //We call the method that will get the value associated with the cell
@@ -255,7 +255,7 @@ namespace ExcelExporterImporter.Common
         /// <param name="LstLastTypeFamilly">List of unlocked cells for item types</param>
         /// <returns></returns>
         private void FormatWorksheet(Document doc, ViewSchedule schedule, ExcelWorksheet worksheet,
-            List<ScheduleField> fieldsList, DataTable dt, Dictionary<int, Parameter> LstParameter,
+            List<ScheduleField> fieldsList, DataTable dt, Dictionary<long, Parameter> LstParameter,
             Dictionary<string, int> LstLastTypeFamilly)
         {
             var iStartCol = 3;
@@ -276,31 +276,20 @@ namespace ExcelExporterImporter.Common
                 //Get the field format
                 var format = "";
                 var formatOptions = scheduleField.GetFormatOptions();
-#if REVIT2021
-                    if (!formatOptions.UseDefault && !formatOptions.GetSymbolTypeId().Empty())
-                    {
-                        var formatValueOptions = new FormatValueOptions();
-                        formatValueOptions.SetFormatOptions(formatOptions);
-                        format =
- UnitFormatUtils.Format(doc.GetUnits(), scheduleField.GetSpecTypeId(), 0, true, formatValueOptions);
-                    }
-                    else if (formatOptions.UseDefault && !scheduleField.GetSpecTypeId().Empty())
-                    {
-                        format = RevitUtilities.GetUnitTypeSymbol(doc, scheduleField.GetSpecTypeId());
-                    }
-#else
-                if (!formatOptions.UseDefault && formatOptions.UnitSymbol != UnitSymbolType.UST_NONE)
+                var scheduleFieldDataTypeId = RevitUtilities.GetScheduleFieldDataTypeId(scheduleField);
+
+                if (!formatOptions.UseDefault && !formatOptions.GetSymbolTypeId().Empty() &&
+                    scheduleFieldDataTypeId != null && !scheduleFieldDataTypeId.Empty())
                 {
                     var formatValueOptions = new FormatValueOptions();
                     formatValueOptions.SetFormatOptions(formatOptions);
-                    format = UnitFormatUtils.Format(doc.GetUnits(), scheduleField.UnitType, 0, true, false,
+                    format = UnitFormatUtils.Format(doc.GetUnits(), scheduleFieldDataTypeId, 0, true,
                         formatValueOptions);
                 }
-                else if (formatOptions.UseDefault && scheduleField.UnitType != UnitType.UT_Undefined)
+                else if (formatOptions.UseDefault && scheduleFieldDataTypeId != null && !scheduleFieldDataTypeId.Empty())
                 {
-                    format = RevitUtilities.GetUnitTypeSymbol(doc, scheduleField.UnitType);
+                    format = RevitUtilities.GetUnitTypeSymbol(doc, scheduleFieldDataTypeId);
                 }
-#endif
                 format = format.IndexOf(" ") > 0 ? format.Replace(" ", " \"") + "\"" : format;
                 if (!string.IsNullOrEmpty(format)) worksheet.Column(colIndex).Style.Numberformat.Format = format;
                 //Change the color of the column if it can not be modified
@@ -453,11 +442,11 @@ namespace ExcelExporterImporter.Common
             {
                 worksheet.Cells[iHeaderRow + 1, iCol].Value = FieldItem.ColumnHeading;
                 var sParamType = string.Empty;
-                if (LstParameter.ContainsKey(FieldItem.ParameterId.IntegerValue))
+                if (LstParameter.ContainsKey(FieldItem.ParameterId.Value))
                 {
-                    var vParam = LstParameter[FieldItem.ParameterId.IntegerValue];
-                    sParamType = LstParameter[FieldItem.ParameterId.IntegerValue].Definition.ParameterType.ToString();
-                    if (sParamType == "Invalid")
+                    var vParam = LstParameter[FieldItem.ParameterId.Value];
+                    sParamType = RevitUtilities.GetParameterTypeLabel(vParam.Definition);
+                    if (string.IsNullOrEmpty(sParamType) || sParamType == "Invalid")
                         sParamType = vParam.StorageType.ToString();
                     else if (sParamType == "YesNo") sParamType = "TrueFalse";
                 }
