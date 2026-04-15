@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter", "ExcelExporterImporter\ExcelExporterImporter.csproj", "{B9E745D9-D2C1-401B-84B0-F51359A0914F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelExporterImporter.Tests", "ExcelExporterImporter.Tests\ExcelExporterImporter.Tests.csproj", "{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

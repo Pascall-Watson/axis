@@ -6,6 +6,7 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using ExcelExporterImporter.Interop;
+using ExcelExporterImporter.Support;
 using log4net;
 using IWin32Window = System.Windows.Forms.IWin32Window;
 
@@ -21,6 +22,7 @@ namespace ExcelExporterImporter
             ref string message,
             ElementSet elements)
         {
+            SupportLog.EnsureConfigured();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             var uiapp = commandData.Application;
@@ -31,13 +33,29 @@ namespace ExcelExporterImporter
             {
                 if (doc == null)
                     return Result.Cancelled;
+
+                SupportLog.Info(
+                    "legacy-command-execute",
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "document", doc.Title },
+                        { "logFilePath", SupportLog.LogFilePath },
+                    });
+
                 ExcelExporterImporterInterop.ShowMainWindow(doc);
 
                 return Result.Succeeded;
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                SupportLog.Error(
+                    "legacy-command-failed",
+                    e,
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "message", e.Message },
+                    });
+                Logger.Error(e.Message, e);
                 return Result.Failed;
             }
         }

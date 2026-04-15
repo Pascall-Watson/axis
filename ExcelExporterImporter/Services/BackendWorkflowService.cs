@@ -9,6 +9,7 @@ using System.Threading;
 using Autodesk.Revit.DB;
 using ExcelExporterImporter.Common;
 using ExcelExporterImporter.Interop;
+using ExcelExporterImporter.Support;
 using OfficeOpenXml;
 
 namespace ExcelExporterImporter.Services
@@ -243,8 +244,15 @@ namespace ExcelExporterImporter.Services
                 var settingsPath = Path.Combine(assemblyFolder ?? string.Empty, "ParametersSettings.xml");
                 ParametersSettings.LoadFromFile(settingsPath, out settings);
             }
-            catch
+            catch (Exception exception)
             {
+                SupportLog.Warn(
+                    "parameters-settings-load-failed",
+                    new Dictionary<string, object>
+                    {
+                        { "settingsFile", "ParametersSettings.xml" },
+                        { "message", exception.Message },
+                    });
                 settings = null;
             }
 
@@ -292,9 +300,12 @@ namespace ExcelExporterImporter.Services
             if (request.ScheduleUniqueIds == null || request.ScheduleUniqueIds.Count == 0)
                 return Fail("No schedules selected for export.", 0);
 
+            EnsureParentDirectoryExists(request.OutputFilePath);
+
             var schedulesInModel = inventoryService.BuildScheduleLookup(document);
             var parametersSettings = request.UseBasicMode ? null : LoadParametersSettings();
             var errors = new List<string>();
+            var warnings = new List<string>();
             var requestedCount = request.ScheduleUniqueIds.Count;
             var succeededCount = 0;
             var skippedCount = 0;
@@ -342,6 +353,15 @@ namespace ExcelExporterImporter.Services
                     catch (Exception ex)
                     {
                         errors.Add("Error exporting '" + schedule.Name + "': " + ex.Message);
+                        SupportLog.Error(
+                            "schedule-export-item-failed",
+                            ex,
+                            new Dictionary<string, object>
+                            {
+                                { "scheduleName", schedule.Name },
+                                { "scheduleUniqueId", uniqueId },
+                                { "targetPath", request.OutputFilePath },
+                            });
                     }
 
                     Increment(progress, 5);
@@ -356,7 +376,10 @@ namespace ExcelExporterImporter.Services
                 package.Save();
             }
 
-            return CompleteResult(requestedCount, succeededCount, skippedCount, errors);
+            if (request.UseBasicMode)
+                warnings.Add("Basic mode export omits color coding and legend sheets by design.");
+
+            return CompleteResult(requestedCount, succeededCount, skippedCount, errors, warnings);
         }
 
         public OperationResult ExecuteExportStandards(
@@ -372,8 +395,11 @@ namespace ExcelExporterImporter.Services
             if (request.StandardGroupUniqueIds == null || request.StandardGroupUniqueIds.Count == 0)
                 return Fail("No standard groups selected for export.", 0);
 
+            EnsureParentDirectoryExists(request.OutputFilePath);
+
             var parametersSettings = LoadParametersSettings();
             var errors = new List<string>();
+            var warnings = new List<string>();
             var requestedCount = request.StandardGroupUniqueIds.Count;
             var succeededCount = 0;
             var standardsExporter = new StandardsExporter(cancellationToken);
@@ -396,6 +422,14 @@ namespace ExcelExporterImporter.Services
                     catch (Exception ex)
                     {
                         errors.Add("Error exporting standard '" + standardGroupId + "': " + ex.Message);
+                        SupportLog.Error(
+                            "standards-export-item-failed",
+                            ex,
+                            new Dictionary<string, object>
+                            {
+                                { "standardGroupId", standardGroupId },
+                                { "targetPath", request.OutputFilePath },
+                            });
                     }
 
                     Increment(progress, 10);
@@ -404,7 +438,10 @@ namespace ExcelExporterImporter.Services
                 package.Save();
             }
 
-            return CompleteResult(requestedCount, succeededCount, 0, errors);
+            if (request.StandardGroupUniqueIds.Count != succeededCount && errors.Count == 0)
+                warnings.Add("One or more standards groups were skipped without a reported backend error.");
+
+            return CompleteResult(requestedCount, succeededCount, 0, errors, warnings);
         }
 
         public OperationResult ExecuteImport(
@@ -421,6 +458,8 @@ namespace ExcelExporterImporter.Services
                 return Fail("No items selected for import.", 0);
 
             var workbookFile = new FileInfo(request.WorkbookFilePath);
+            if (!workbookFile.Exists)
+                return Fail("The workbook file does not exist: " + request.WorkbookFilePath, request.ItemUniqueIds.Count);
             if (workbookFile.IsFileLocked())
                 return Fail("The workbook file is locked or in use: " + request.WorkbookFilePath, request.ItemUniqueIds.Count);
 
@@ -429,6 +468,7 @@ namespace ExcelExporterImporter.Services
             var knownStandards = inventoryService.BuildKnownStandardsLookup();
             var requestedIds = new HashSet<string>(request.ItemUniqueIds);
             var errors = new List<string>();
+            var warnings = new List<string>();
             var succeededCount = 0;
             var skippedCount = 0;
 
@@ -437,6 +477,16 @@ namespace ExcelExporterImporter.Services
                 var selectedWorksheets = package.Workbook.Worksheets
                     .Where(worksheet => requestedIds.Contains(Convert.ToString(worksheet.Cells[1, 1].Value)))
                     .ToList();
+
+                if (selectedWorksheets.Count == 0)
+                    return Fail("None of the selected workbook items were found in the workbook.", request.ItemUniqueIds.Count);
+
+                var discoveredIds = new HashSet<string>(selectedWorksheets.Select(worksheet => Convert.ToString(worksheet.Cells[1, 1].Value)));
+                foreach (var missingId in requestedIds.Where(id => !discoveredIds.Contains(id)))
+                {
+                    warnings.Add("Selected workbook item was not found and was skipped: " + missingId);
+                    skippedCount++;
+                }
 
                 var scheduleImporter = new ScheduleImporter(cancellationToken);
                 var standardsImporter = new StandardsImporter(cancellationToken);
@@ -460,6 +510,15 @@ namespace ExcelExporterImporter.Services
                         catch (Exception ex)
                         {
                             errors.Add(string.Format(Resources.Schedule2, schedule.Name, ex.Message));
+                            SupportLog.Error(
+                                "schedule-import-item-failed",
+                                ex,
+                                new Dictionary<string, object>
+                                {
+                                    { "scheduleName", schedule.Name },
+                                    { "scheduleUniqueId", uniqueId },
+                                    { "workbookPath", request.WorkbookFilePath },
+                                });
                         }
 
                         Increment(progress, 5);
@@ -475,6 +534,15 @@ namespace ExcelExporterImporter.Services
                         catch (Exception ex)
                         {
                             errors.Add(string.Format(Resources.Standard, knownStandards[uniqueId], ex.Message));
+                            SupportLog.Error(
+                                "standard-import-item-failed",
+                                ex,
+                                new Dictionary<string, object>
+                                {
+                                    { "standardUniqueId", uniqueId },
+                                    { "standardName", knownStandards[uniqueId] },
+                                    { "workbookPath", request.WorkbookFilePath },
+                                });
                         }
 
                         Increment(progress, 5);
@@ -487,7 +555,7 @@ namespace ExcelExporterImporter.Services
                 }
             }
 
-            return CompleteResult(request.ItemUniqueIds.Count, succeededCount, skippedCount, errors);
+            return CompleteResult(request.ItemUniqueIds.Count, succeededCount, skippedCount, errors, warnings);
         }
 
         internal Progress CreateCallbackProgress(Action<ProgressInfo> callback, int maxValue)
@@ -530,14 +598,26 @@ namespace ExcelExporterImporter.Services
                 new OperationSummary(requestedCount, 0, 1, 0));
         }
 
-        private static OperationResult CompleteResult(int requestedCount, int succeededCount, int skippedCount, IList<string> errors)
+        private static OperationResult CompleteResult(
+            int requestedCount,
+            int succeededCount,
+            int skippedCount,
+            IList<string> errors,
+            IList<string> warnings)
         {
             var failedCount = errors == null ? 0 : errors.Count;
             return new OperationResult(
                 failedCount == 0,
                 errors,
-                null,
+                warnings,
                 new OperationSummary(requestedCount, succeededCount, failedCount, skippedCount));
+        }
+
+        private static void EnsureParentDirectoryExists(string filePath)
+        {
+            var directoryPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
         }
 
         private static void Increment(Progress progress, int value)

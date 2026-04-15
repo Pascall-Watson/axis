@@ -217,27 +217,48 @@ namespace ExcelExporterImporter.Interop
             {
                 return new OperationResult(
                     false,
-                    new List<string> { "Operation was cancelled." },
                     new List<string>(),
-                    null);
+                    new List<string> { "Operation was cancelled." },
+                    new OperationSummary(0, 0, 0, 0),
+                    isCancelled: true);
             }
         }
 
         public OperationResult(bool success, IList<string> errors, IList<string> warnings)
-            : this(success, errors, warnings, null)
+            : this(success, errors, warnings, null, false, null, null, null)
         {
         }
 
         public OperationResult(bool success, IList<string> errors, IList<string> warnings, OperationSummary summary)
+            : this(success, errors, warnings, summary, false, null, null, null)
+        {
+        }
+
+        public OperationResult(
+            bool success,
+            IList<string> errors,
+            IList<string> warnings,
+            OperationSummary summary,
+            bool isCancelled,
+            string operationName = null,
+            string operationId = null,
+            string logFilePath = null)
         {
             Success = success;
             Errors = errors != null ? new List<string>(errors) : new List<string>();
             Warnings = warnings != null ? new List<string>(warnings) : new List<string>();
             Summary = summary;
+            IsCancelled = isCancelled;
+            OperationName = operationName;
+            OperationId = operationId;
+            LogFilePath = logFilePath;
         }
 
         /// <summary>True when the operation completed without errors.</summary>
         public bool Success { get; }
+
+        /// <summary>True when the operation was cancelled by the user.</summary>
+        public bool IsCancelled { get; }
 
         /// <summary>Error messages. Empty when the operation succeeded.</summary>
         public IReadOnlyList<string> Errors { get; }
@@ -247,6 +268,28 @@ namespace ExcelExporterImporter.Interop
 
         /// <summary>Execution counts describing the completed workflow.</summary>
         public OperationSummary Summary { get; }
+
+        /// <summary>Stable workflow name used for logging and support triage.</summary>
+        public string OperationName { get; }
+
+        /// <summary>Correlation id for the backend operation instance.</summary>
+        public string OperationId { get; }
+
+        /// <summary>Path to the backend support log file written by the add-in.</summary>
+        public string LogFilePath { get; }
+
+        internal OperationResult WithSupportContext(string operationName, string operationId, string logFilePath)
+        {
+            return new OperationResult(
+                Success,
+                new List<string>(Errors),
+                new List<string>(Warnings),
+                Summary,
+                IsCancelled,
+                operationName,
+                operationId,
+                logFilePath);
+        }
     }
 
     /// <summary>

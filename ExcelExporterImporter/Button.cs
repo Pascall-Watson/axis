@@ -4,10 +4,8 @@ using System.Reflection;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
+using ExcelExporterImporter.Support;
 using log4net;
-using log4net.Appender;
-using log4net.Config;
-using log4net.Layout;
 
 namespace ExcelExporterImporter
 {
@@ -23,20 +21,9 @@ namespace ExcelExporterImporter
         {
             try
             {
+                SupportLog.EnsureConfigured();
                 var assemblieFolder = Path.GetDirectoryName(Assembly.GetAssembly(GetType()).Location);
                 var commandPath = Assembly.GetAssembly(GetType()).Location;
-
-                var fileAppender = new FileAppender {File = assemblieFolder + "\\errors.log", AppendToFile = true};
-                var layout = new PatternLayout
-                {
-                    ConversionPattern = "%date [%thread] %-5level %logger [%property{NDC}] - %message%newline"
-                };
-                layout.ActivateOptions();
-
-                fileAppender.Layout = layout;
-                fileAppender.ActivateOptions();
-
-                BasicConfigurator.Configure(fileAppender);
 
                 var toolsPanel = GetOrCreateRibbonPanel(application);
 
@@ -52,10 +39,22 @@ namespace ExcelExporterImporter
 
                 pushButton.LargeImage = new BitmapImage(new Uri(buttonImage));
                 pushButton.ToolTip = AddinInfo.AddinDescription;
+
+                SupportLog.Info(
+                    "addin-startup",
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "assemblyPath", commandPath },
+                        { "logFilePath", SupportLog.LogFilePath },
+                    });
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                SupportLog.Error(
+                    "addin-startup-failed",
+                    e,
+                    new System.Collections.Generic.Dictionary<string, object>());
+                Logger.Error(e.Message, e);
                 return Result.Failed;
             }
 

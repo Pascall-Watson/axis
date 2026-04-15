@@ -5,6 +5,7 @@ using System.Threading;
 using System.Windows.Interop;
 using Autodesk.Revit.DB;
 using ExcelExporterImporter.Services;
+using ExcelExporterImporter.Support;
 using ExcelExporterImporter.Views;
 
 namespace ExcelExporterImporter.Interop
@@ -28,7 +29,15 @@ namespace ExcelExporterImporter.Interop
             if (document == null)
                 return false;
 
+            SupportLog.EnsureConfigured();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            SupportLog.Info(
+                "legacy-window-launch",
+                new Dictionary<string, object>
+                {
+                    { "document", document.Title },
+                    { "ownerHandle", ownerHandle.ToString() },
+                });
 
             var dialog = new MainWindow(document);
             var helper = new WindowInteropHelper(dialog);
@@ -40,6 +49,12 @@ namespace ExcelExporterImporter.Interop
 
             dialog.ShowDialog();
             return true;
+        }
+
+        public static string GetBackendLogFilePath()
+        {
+            SupportLog.EnsureConfigured();
+            return SupportLog.LogFilePath;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -54,6 +69,7 @@ namespace ExcelExporterImporter.Interop
         /// </summary>
         public static IReadOnlyList<ScheduleInfo> GetExportableSchedules(Document document)
         {
+            SupportLog.EnsureConfigured();
             return InventoryService.GetExportableSchedules(document);
         }
 
@@ -64,6 +80,7 @@ namespace ExcelExporterImporter.Interop
         /// </summary>
         public static IReadOnlyList<StandardInfo> GetExportableStandards()
         {
+            SupportLog.EnsureConfigured();
             return InventoryService.GetExportableStandards();
         }
 
@@ -76,6 +93,7 @@ namespace ExcelExporterImporter.Interop
         /// <param name="filePath">Absolute path to the .xlsx workbook.</param>
         public static ImportWorkbookInspection InspectImportWorkbook(Document document, string filePath)
         {
+            SupportLog.EnsureConfigured();
             return InventoryService.InspectImportWorkbook(document, filePath);
         }
 
@@ -90,10 +108,28 @@ namespace ExcelExporterImporter.Interop
             Action<ProgressInfo> onProgress,
             CancellationToken cancellationToken)
         {
-            var progress = WorkflowService.CreateCallbackProgress(
-                onProgress,
-                WorkflowService.EstimateScheduleExportProgressMaximum(request));
-            return WorkflowService.ExecuteExportSchedules(document, request, cancellationToken, progress);
+            var context = SupportLog.StartOperation(
+                "export-schedules",
+                "pyrevit",
+                document != null ? document.Title : null,
+                request != null ? request.OutputFilePath : null,
+                request != null && request.ScheduleUniqueIds != null ? request.ScheduleUniqueIds.Count : 0);
+
+            try
+            {
+                var progress = WorkflowService.CreateCallbackProgress(
+                    onProgress,
+                    WorkflowService.EstimateScheduleExportProgressMaximum(request));
+                var result = WorkflowService.ExecuteExportSchedules(document, request, cancellationToken, progress);
+                return SupportLog.CompleteOperation(context, result);
+            }
+            catch (Exception exception)
+            {
+                return SupportLog.FailOperation(
+                    context,
+                    "Unexpected backend error during schedule export. Review the backend log and rerun the workflow.",
+                    exception);
+            }
         }
 
         /// <summary>
@@ -107,10 +143,28 @@ namespace ExcelExporterImporter.Interop
             Action<ProgressInfo> onProgress,
             CancellationToken cancellationToken)
         {
-            var progress = WorkflowService.CreateCallbackProgress(
-                onProgress,
-                WorkflowService.EstimateStandardsExportProgressMaximum(request));
-            return WorkflowService.ExecuteExportStandards(document, request, cancellationToken, progress);
+            var context = SupportLog.StartOperation(
+                "export-standards",
+                "pyrevit",
+                document != null ? document.Title : null,
+                request != null ? request.OutputFilePath : null,
+                request != null && request.StandardGroupUniqueIds != null ? request.StandardGroupUniqueIds.Count : 0);
+
+            try
+            {
+                var progress = WorkflowService.CreateCallbackProgress(
+                    onProgress,
+                    WorkflowService.EstimateStandardsExportProgressMaximum(request));
+                var result = WorkflowService.ExecuteExportStandards(document, request, cancellationToken, progress);
+                return SupportLog.CompleteOperation(context, result);
+            }
+            catch (Exception exception)
+            {
+                return SupportLog.FailOperation(
+                    context,
+                    "Unexpected backend error during standards export. Review the backend log and rerun the workflow.",
+                    exception);
+            }
         }
 
         /// <summary>
@@ -124,10 +178,28 @@ namespace ExcelExporterImporter.Interop
             Action<ProgressInfo> onProgress,
             CancellationToken cancellationToken)
         {
-            var progress = WorkflowService.CreateCallbackProgress(
-                onProgress,
-                WorkflowService.EstimateImportProgressMaximum(request));
-            return WorkflowService.ExecuteImport(document, request, cancellationToken, progress);
+            var context = SupportLog.StartOperation(
+                "import-workbook",
+                "pyrevit",
+                document != null ? document.Title : null,
+                request != null ? request.WorkbookFilePath : null,
+                request != null && request.ItemUniqueIds != null ? request.ItemUniqueIds.Count : 0);
+
+            try
+            {
+                var progress = WorkflowService.CreateCallbackProgress(
+                    onProgress,
+                    WorkflowService.EstimateImportProgressMaximum(request));
+                var result = WorkflowService.ExecuteImport(document, request, cancellationToken, progress);
+                return SupportLog.CompleteOperation(context, result);
+            }
+            catch (Exception exception)
+            {
+                return SupportLog.FailOperation(
+                    context,
+                    "Unexpected backend error during import. Review the backend log and rerun the workflow.",
+                    exception);
+            }
         }
     }
 }

@@ -21,6 +21,20 @@ The original WPF path is still available as a separate fallback button:
 
 This keeps migration risk low while allowing side-by-side validation.
 
+## Sprint 5: Deployment hardening
+
+Sprint 5 keeps the Python workflow and the legacy WPF fallback side by side, but adds supportability for office rollout:
+
+- Structured support logs for the pyRevit UI and the C# backend under `%LOCALAPPDATA%\Axis\ExcelExporterImporter\Logs`.
+- Operation IDs surfaced in Python result dialogs for faster support triage.
+- Clearer summaries for export/import outcomes, including warnings, skips, and log file locations.
+- Conservative backend hardening that does not remove the legacy WPF fallback.
+- A log4net upgrade from `2.0.3` to `3.3.0` to address the previously flagged vulnerabilities.
+
+The Python workflow writes `python-ui.log`. The C# add-in writes `backend.log`. Both use a simple structured `key="value"` format so support staff can search by `operationId`, `event`, `document`, or file path.
+
+See `docs/OPERATIONS.md` for pilot rollout, rollback, troubleshooting, log collection, and regression checks.
+
 ---
 
 ## Sprint 2: C# Backend Facade (interop boundary)
@@ -208,6 +222,16 @@ Run these tests in both Revit 2025 and Revit 2026.
 
 6. Failure-path smoke test
    - If the launcher fails, confirm the pyRevit alert reports the DLL path it loaded or the paths it searched, then follow the suggested rebuild and reload steps.
+
+### Sprint 5 regression checks
+
+Run these checks before widening rollout beyond a pilot group:
+
+1. Confirm `Excel Exporter Importer` still opens the Python chooser and `Excel Exporter Importer (Legacy WPF)` still opens the original WPF dialog.
+2. Run one successful schedule export, one successful standards export, and one successful import. Confirm the result dialog includes a status, requested/succeeded/failed counts, and log file locations.
+3. Force one known failure path, such as selecting a locked workbook for import or temporarily removing the staged DLL. Confirm the alert includes next steps and the support log paths.
+4. Check `%LOCALAPPDATA%\Axis\ExcelExporterImporter\Logs\python-ui.log` and `%LOCALAPPDATA%\Axis\ExcelExporterImporter\Logs\backend.log` for a matching `operationId` on the failed or successful workflow.
+5. Keep the legacy WPF button enabled during pilot rollout. Use it as the rollback path if the Python workflow blocks a team member.
 
 ## Description
 
