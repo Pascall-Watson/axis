@@ -17,6 +17,15 @@ namespace ExcelExporterImporter.Common
     {
         private const ScheduleFieldType CountHost = (ScheduleFieldType) 23; //<Add type 23 which is a host account
 
+        private static int GetElementIdIntegerValue(ElementId elementId)
+        {
+    #if REVIT2024
+            return elementId.IntegerValue;
+    #else
+            return (int) elementId.Value;
+    #endif
+        }
+
         private static Element GetAnalyticalModelElement(Element element)
         {
             if (element == null)
@@ -244,7 +253,7 @@ namespace ExcelExporterImporter.Common
                 var familysymbol = FIelement.Symbol;
                 if (familysymbol != null)
                 {
-                    parameter2 = familysymbol.get_Parameter((BuiltInParameter) parameterId.Value);
+                    parameter2 = familysymbol.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     if (parameter2 != null) parameter = parameter2;
                 }
             }
@@ -268,7 +277,7 @@ namespace ExcelExporterImporter.Common
                 var walltype = Welement.WallType;
                 if (walltype != null)
                 {
-                    parameter2 = walltype.get_Parameter((BuiltInParameter) parameterId.Value);
+                    parameter2 = walltype.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     if (parameter2 != null) parameter = parameter2;
                 }
             }
@@ -290,7 +299,7 @@ namespace ExcelExporterImporter.Common
             var parameterId = scheduleField.ParameterId;
             //
             var sColName11 = scheduleField.GetName(); //Ligne pour facilité le débugage
-            var vName11 = (BuiltInParameter) parameterId.Value; //Ligne pour facilité le débugage
+            var vName11 = (BuiltInParameter) GetElementIdIntegerValue(parameterId); //Ligne pour facilité le débugage
             //Il va chercher les paramètres du champs pour permettre l'affichage du bon format
             //----Action selon le type de champ / Action according to the type of field----
             switch (scheduleField.FieldType)
@@ -307,7 +316,7 @@ namespace ExcelExporterImporter.Common
                         var ElementType = doc.GetElement(element.GetTypeId());
                         if (ElementType != null)
                         {
-                            parameter = ElementType.get_Parameter((BuiltInParameter) parameterId.Value);
+                            parameter = ElementType.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                             if (parameter != null)
                             {
                                 var tTypeParameter = parameter.Element.GetType();
@@ -332,19 +341,19 @@ namespace ExcelExporterImporter.Common
                     if (familyInstanceSpace != null)
                     {
                         var space = familyInstanceSpace.Space;
-                        if (space != null) parameter = space.get_Parameter((BuiltInParameter) parameterId.Value);
+                        if (space != null) parameter = space.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     }
 
                     break;
                 case ScheduleFieldType.Analytical:
                     var elementanalytical = GetAnalyticalModelElement(element);
                     if (elementanalytical != null)
-                        parameter = elementanalytical.get_Parameter((BuiltInParameter) parameterId.Value);
+                        parameter = elementanalytical.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     break;
                 case ScheduleFieldType.ProjectInfo:
                     var vProjectInfo = doc.ProjectInformation;
                     if (vProjectInfo != null)
-                        parameter = vProjectInfo.get_Parameter((BuiltInParameter) parameterId.Value);
+                        parameter = vProjectInfo.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     break;
                 case ScheduleFieldType.FromRoom:
                 case ScheduleFieldType.ToRoom:
@@ -353,7 +362,7 @@ namespace ExcelExporterImporter.Common
                     if (familyInstance != null)
                     {
                         var room = GetFamillyRoom(familyInstance, pElement, scheduleField.FieldType);
-                        if (room != null) parameter = room.get_Parameter((BuiltInParameter) parameterId.Value);
+                        if (room != null) parameter = room.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     }
                     else
                     {
@@ -362,16 +371,16 @@ namespace ExcelExporterImporter.Common
                         {
                             var sRoom = sElement.Room;
                             if (sRoom != null)
-                                parameter = sRoom.get_Parameter((BuiltInParameter) parameterId.Value);
+                                parameter = sRoom.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         }
                     }
 
                     break;
                 case ScheduleFieldType.MaterialQuantity:
-                    parameter = element.get_Parameter((BuiltInParameter) parameterId.Value);
+                    parameter = element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     break;
                 case ScheduleFieldType.PhysicalInstance:
-                    parameter = element.get_Parameter((BuiltInParameter) parameterId.Value);
+                    parameter = element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                     break;
                 case ScheduleFieldType.StructuralMaterial:
                     var SM_familyInstance = element as FamilyInstance;
@@ -387,10 +396,10 @@ namespace ExcelExporterImporter.Common
                             var SAI_Material_FamilyInstance = doc.GetElement(Material_FamilyInstance.StructuralAssetId);
                             if (SAI_Material_FamilyInstance != null)
                                 parameter = SAI_Material_FamilyInstance.get_Parameter(
-                                    (BuiltInParameter) parameterId.Value);
+                                    (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                             if (parameter == null)
                                 parameter = Material_FamilyInstance.get_Parameter(
-                                    (BuiltInParameter) parameterId.Value);
+                                    (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         }
                         else
                         {
@@ -410,10 +419,10 @@ namespace ExcelExporterImporter.Common
                                             doc.GetElement(SM_Material_FamilySymbol.StructuralAssetId);
                                         if (SAI_Material_FamilySymbol != null)
                                             parameter = SAI_Material_FamilySymbol.get_Parameter(
-                                                (BuiltInParameter) parameterId.Value);
+                                                (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                         if (parameter == null)
                                             parameter = SM_Material_FamilySymbol.get_Parameter(
-                                                (BuiltInParameter) parameterId.Value);
+                                                (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                     }
                                 }
                             }
@@ -429,10 +438,10 @@ namespace ExcelExporterImporter.Common
                             var SAI_Material_FloorType = doc.GetElement(Material_FloorType.StructuralAssetId);
                             if (SAI_Material_FloorType != null)
                                 parameter = SAI_Material_FloorType.get_Parameter(
-                                    (BuiltInParameter) parameterId.Value);
+                                    (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                             if (parameter == null)
                                 parameter = Material_FloorType.get_Parameter(
-                                    (BuiltInParameter) parameterId.Value);
+                                    (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         }
                     }
 
@@ -451,54 +460,22 @@ namespace ExcelExporterImporter.Common
                                     var SAI_Material_WallType = doc.GetElement(Material_WallType.StructuralAssetId);
                                     if (SAI_Material_WallType != null)
                                         parameter = SAI_Material_WallType.get_Parameter(
-                                            (BuiltInParameter) parameterId.Value);
+                                            (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                     if (parameter == null)
                                         parameter = Material_WallType.get_Parameter(
-                                            (BuiltInParameter) parameterId.Value);
+                                            (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                 }
                             }
                         }
                     }
-#if REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021
-                    var SM_WallFoundation = element as WallFoundation;
-                    if(SM_WallFoundation != null && parameter == null)
-                    {
-                        Element SM_WallFoundationType = doc.GetElement(SM_WallFoundation.GetTypeId());
-                        if (SM_WallFoundationType != null)
-                        {
-                            Autodesk.Revit.DB.Parameter ParameterWallFoundationType =
- SM_WallFoundationType.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM);
-                            if(ParameterWallFoundationType != null)
-                            {
-                                Material Material_WallFoundationType =
- doc.GetElement(ParameterWallFoundationType.AsElementId()) as Material;
-                                if(Material_WallFoundationType != null)
-                                {
-                                    Element SAI_Material_WallFoundationType =
- doc.GetElement(Material_WallFoundationType.StructuralAssetId);
-                                    if(SAI_Material_WallFoundationType != null)
-                                    {
-                                        parameter =
- SAI_Material_WallFoundationType.get_Parameter((BuiltInParameter)parameterId.Value);
-                                    }
-                                    if(parameter == null)
-                                    {
-                                        parameter =
- Material_WallFoundationType.get_Parameter((BuiltInParameter)parameterId.Value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-#endif
                     break;
                 case ScheduleFieldType.Instance: //Éventuellement simplifié ce code
-                    if (parameterId.Value > 0) //Indique que c'est un paramètre partagé
+                    if (GetElementIdIntegerValue(parameterId) > 0) //Indique que c'est un paramètre partagé
                     {
                         var ElementType = doc.GetElement(element.GetTypeId());
                         if (ElementType != null)
                         {
-                            parameter = ElementType.get_Parameter((BuiltInParameter) parameterId.Value);
+                            parameter = ElementType.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                             if (parameter != null)
                             {
                                 var tTypeParameter = parameter.Element.GetType();
@@ -518,7 +495,7 @@ namespace ExcelExporterImporter.Common
 
                         if (parameter == null || !parameter.HasValue)
                         {
-                            parameter = element.get_Parameter((BuiltInParameter) parameterId.Value);
+                            parameter = element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
 
                             if (parameter != null)
                             {
@@ -537,12 +514,12 @@ namespace ExcelExporterImporter.Common
                     }
                     else //Ce n'est pas un paramètre partagé
                     {
-                        parameter = element.get_Parameter((BuiltInParameter) parameterId.Value);
+                        parameter = element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         if (!ValidValue(parameter))
                         {
                             var AM_Element = GetAnalyticalModelElement(element);
                             if (AM_Element != null)
-                                parameter = AM_Element.get_Parameter((BuiltInParameter) parameterId.Value);
+                                parameter = AM_Element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                             if (parameter != null)
                             {
                                 var tTypeParameter = parameter.Element.GetType();
@@ -564,12 +541,12 @@ namespace ExcelExporterImporter.Common
                     try
                     {
                         var sColName = scheduleField.GetName(); //Ligne pour facilité le débugage
-                        var vName = (BuiltInParameter) parameterId.Value; //Ligne pour facilité le débugage
+                        var vName = (BuiltInParameter) GetElementIdIntegerValue(parameterId); //Ligne pour facilité le débugage
                         var AM_Element = GetAnalyticalModelElement(element);
                         if (AM_Element != null)
-                            parameter = AM_Element.get_Parameter((BuiltInParameter) parameterId.Value);
+                            parameter = AM_Element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         if (parameter == null)
-                            parameter = element.get_Parameter((BuiltInParameter) parameterId.Value);
+                            parameter = element.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                         if (parameter != null) //Pour obtenir les valeurs des paramètres partagé
                         {
                             var tTypeParameter = parameter.Element.GetType();
@@ -589,7 +566,7 @@ namespace ExcelExporterImporter.Common
                             var ElementType2 = doc.GetElement(element.GetTypeId());
                             if (ElementType2 != null)
                             {
-                                parameter = ElementType2.get_Parameter((BuiltInParameter) parameterId.Value);
+                                parameter = ElementType2.get_Parameter((BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                 if (parameter != null)
                                 {
                                     var tTypeParameter = parameter.Element.GetType();
@@ -669,7 +646,7 @@ namespace ExcelExporterImporter.Common
             }
             else
             {
-                if (readonlyParameters.ContainsKey(scheduleField.ParameterId.Value) || parameter.IsReadOnly ||
+                if (readonlyParameters.ContainsKey(GetElementIdIntegerValue(scheduleField.ParameterId)) || parameter.IsReadOnly ||
                     bExtSchedule)
                     readonlyParameter = true;
                 else
@@ -704,22 +681,22 @@ namespace ExcelExporterImporter.Common
                     break;
                 case ScheduleFieldType.MaterialQuantity:
                     var scheduleFieldDataTypeId = GetScheduleFieldDataTypeId(scheduleField);
-                    if (parameterId.Value == (int) BuiltInParameter.MATERIAL_AREA)
+                    if (GetElementIdIntegerValue(parameterId) == (int) BuiltInParameter.MATERIAL_AREA)
                     {
                         cellVal = RevitUtilities.ConvertToDisplayUnit(doc, scheduleFieldDataTypeId,
                             RevitUtilities.GetMaterialAreaOfElement(element));
                     }
-                    else if (parameterId.Value == (int) BuiltInParameter.MATERIAL_VOLUME)
+                    else if (GetElementIdIntegerValue(parameterId) == (int) BuiltInParameter.MATERIAL_VOLUME)
                     {
                         cellVal = RevitUtilities.ConvertToDisplayUnit(doc, scheduleFieldDataTypeId,
                             RevitUtilities.GetMaterialValumeOfElement(element));
                     }
-                    else if (parameterId.Value == (int) BuiltInParameter.MATERIAL_ASPAINT)
+                    else if (GetElementIdIntegerValue(parameterId) == (int) BuiltInParameter.MATERIAL_ASPAINT)
                     {
                         cellVal = "No";
                         if (element.GetMaterialIds(true).Count > 0) cellVal = "Yes";
                     }
-                    else if (parameterId.Value == (int) BuiltInParameter.PHY_MATERIAL_PARAM_UNIT_WEIGHT)
+                    else if (GetElementIdIntegerValue(parameterId) == (int) BuiltInParameter.PHY_MATERIAL_PARAM_UNIT_WEIGHT)
                     {
                         double dCellVal = 0;
                         var materials = element.GetMaterialIds(false);
@@ -733,7 +710,7 @@ namespace ExcelExporterImporter.Common
                                     if (pseProperty != null)
                                     {
                                         parameter = pseProperty.get_Parameter(
-                                            (BuiltInParameter) parameterId.Value);
+                                            (BuiltInParameter) GetElementIdIntegerValue(parameterId));
                                         if (parameter != null)
                                         {
                                             dCellVal += Convert.ToDouble(GetParameterValue(doc, parameter,

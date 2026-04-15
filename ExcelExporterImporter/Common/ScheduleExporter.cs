@@ -15,6 +15,15 @@ namespace ExcelExporterImporter.Common
         private const int ScheduleGuidRow = 1;
         private readonly CancellationToken cancellationToken;
 
+        private static long GetElementIdValue(ElementId elementId)
+        {
+    #if REVIT2024
+            return elementId.IntegerValue;
+    #else
+            return elementId.Value;
+    #endif
+        }
+
         /// <summary>
         ///     Modifies the content of the cancellationToken variable
         /// </summary>
@@ -102,9 +111,9 @@ namespace ExcelExporterImporter.Common
 
             var bAnalyticalNodesShedule = false;
             var bRvtLinksShedule = false;
-            if (BuiltInCategory.OST_AnalyticalNodes == (BuiltInCategory) schedule.Definition.CategoryId.Value)
+            if (BuiltInCategory.OST_AnalyticalNodes == (BuiltInCategory) GetElementIdValue(schedule.Definition.CategoryId))
                 bAnalyticalNodesShedule = true;
-            else if (BuiltInCategory.OST_RvtLinks == (BuiltInCategory) schedule.Definition.CategoryId.Value)
+            else if (BuiltInCategory.OST_RvtLinks == (BuiltInCategory) GetElementIdValue(schedule.Definition.CategoryId))
                 bRvtLinksShedule = true;
             //Excluded revit links
             if (revitLinksElements.Any() && bRvtLinksShedule == false)
@@ -175,8 +184,11 @@ namespace ExcelExporterImporter.Common
                     //We call the method that will get the parameters associated with the cell
                     var parameter = RevitUtilities.GetParameter(doc, element, scheduleField, pElement);
                     if (parameter != null)
-                        if (!LstParameter.ContainsKey(scheduleField.ParameterId.Value))
-                            LstParameter.Add(scheduleField.ParameterId.Value, parameter);
+                    {
+                        var scheduleFieldParameterId = GetElementIdValue(scheduleField.ParameterId);
+                        if (!LstParameter.ContainsKey(scheduleFieldParameterId))
+                            LstParameter.Add(scheduleFieldParameterId, parameter);
+                    }
                     //We call the method that will get the rights associated with the cell
                     var readonlyParameter = RevitUtilities.GetIsReadOnly(parameter, scheduleField, readonlyParameters);
                     //We call the method that will get the value associated with the cell
@@ -442,9 +454,10 @@ namespace ExcelExporterImporter.Common
             {
                 worksheet.Cells[iHeaderRow + 1, iCol].Value = FieldItem.ColumnHeading;
                 var sParamType = string.Empty;
-                if (LstParameter.ContainsKey(FieldItem.ParameterId.Value))
+                var fieldParameterId = GetElementIdValue(FieldItem.ParameterId);
+                if (LstParameter.ContainsKey(fieldParameterId))
                 {
-                    var vParam = LstParameter[FieldItem.ParameterId.Value];
+                    var vParam = LstParameter[fieldParameterId];
                     sParamType = RevitUtilities.GetParameterTypeLabel(vParam.Definition);
                     if (string.IsNullOrEmpty(sParamType) || sParamType == "Invalid")
                         sParamType = vParam.StorageType.ToString();
