@@ -1,139 +1,151 @@
-I’m turning the migration plan into execution-ready sprints with handoff prompts you can paste into Copilot, keeping the work small enough for a novice-managed workflow and safe enough for staged rollout.
+Created memory file [](file:///c%3A/Users/Wayne/AppData/Roaming/Code/User/workspaceStorage/b6087fa5447da5757285f3d77c14eddd/GitHub.copilot-chat/memory-tool/memories/MWEwMGVmNGUtYTc5Zi00OTExLWE5OTMtYzQ5NmI0ZjliMGU1/plan.md)
 
-Read memory [](file:///c%3A/Users/Wayne/AppData/Roaming/Code/User/workspaceStorage/b6087fa5447da5757285f3d77c14eddd/GitHub.copilot-chat/memory-tool/memories/ODA2NzRiZTktMThjNy00ZGQxLTgwODMtNWFiMTFlOTc0MmRj/plan.md)
+Now I'll create a comprehensive plan. First, let me clarify a few implementation details: 
 
-I’m rewriting the stored plan into sprint-sized handoffs with clear goals, acceptance checks, and paste-ready Copilot prompts so you can drive this step by step without having to manage the architecture details yourself.
+Analyzing your answers...
 
-Deleted memory [](file:///c%3A/Users/Wayne/AppData/Roaming/Code/User/workspaceStorage/b6087fa5447da5757285f3d77c14eddd/GitHub.copilot-chat/memory-tool/memories/ODA2NzRiZTktMThjNy00ZGQxLTgwODMtNWFiMTFlOTc0MmRj/plan.md)
 
-Created memory file [](file:///c%3A/Users/Wayne/AppData/Roaming/Code/User/workspaceStorage/b6087fa5447da5757285f3d77c14eddd/GitHub.copilot-chat/memory-tool/memories/ODA2NzRiZTktMThjNy00ZGQxLTgwODMtNWFiMTFlOTc0MmRj/plan.md)
 
-Use 5 sprints. That is the right size here: small enough that Copilot can complete each one, but large enough that each sprint leaves you with a meaningful working checkpoint.
+Fetched 4 resources
 
-## Plan: 5-Sprint Delivery Plan
+Now I have the critical information needed. Let me update the session plan with targets frameworks and prepare the comprehensive implementation plan: 
 
-The overall strategy is simple: do not rewrite the Revit and Excel logic in Python. Keep the backend in C#, extract it from the WPF viewmodel, and then build the pyRevit UI on top of that stable backend. Keep the current WPF path alive until the Python path is proven.
+Updated memory file [](file:///c%3A/Users/Wayne/AppData/Roaming/Code/User/workspaceStorage/b6087fa5447da5757285f3d77c14eddd/GitHub.copilot-chat/memory-tool/memories/MWEwMGVmNGUtYTc5Zi00OTExLWE5OTMtYzQ5NmI0ZjliMGU1/plan.md)
 
-**Sprint 1**
-Goal: freeze the baseline and make the repo safer to work on.
+Now I'll generate the comprehensive implementation plan based on all the research:
 
-What gets done:
-1. Verify and document the current build, stage, and smoke-test flow for Revit 2025 and 2026.
-2. Improve README and pyRevit launcher diagnostics.
-3. Add clear failure messages and loaded-DLL-path reporting.
-4. Do not change the actual WPF-driven workflow yet.
+## Plan: Multi-Version Revit Support (2024-2027 Only)
 
-Definition of done:
-1. Build-PyRevitHybrid.ps1 still stages the extension.
-2. The pyRevit button still launches the current WPF window.
-3. The repo contains a clear manual smoke test for export and import.
-4. A novice can follow the docs and run it.
+**TL;DR:** Migrate from single `.csproj` with build properties to the article's approach: abstract base `.csproj` + four version-specific `.csproj` files (one per version). This provides cleaner IDE support and IntelliSense. Update conditional symbols for 2024 (new), remove pre-2024 code blocks, and handle .NET Framework/Core split via version-specific `obj` folders and target frameworks.
 
-Prompt to give Copilot:
-Implement Sprint 1 only. Create a production-safe baseline for the pyRevit migration in this repo without changing the current WPF-driven workflow. Improve README and extension documentation with exact build, staging, rollback, and smoke-test steps for Revit 2025 and 2026. Improve the pyRevit launcher so failures show the attempted DLL path and clear next steps. Keep the current pyRevit launcher and C# WPF window working exactly as they do now. Do not refactor core logic, do not remove WPF code, and do not start the Python UI migration yet. Verify modified files for errors and summarize the manual smoke tests to run.
+---
 
-**Sprint 2**
-Goal: create the C# API boundary Python will call later.
+## Steps
 
-What gets done:
-1. Add DTOs for schedules, standards, import previews, requests, results, warnings, and progress.
-2. Extend ExcelExporterImporterInterop.cs with service-style methods.
-3. Keep `ShowMainWindow(...)` working for backward compatibility.
-4. Make sure the new API exposes no WPF types.
-5. Resolve or suppress the MSB3277 Microsoft.Extensions.* version conflicts from the Revit 2026 build (carried over from Sprint 1 build output).
+**Phase 1: Refactor Project Structure (Parallel Setup)**
 
-Definition of done:
-1. The solution builds.
-2. The old WPF launcher still works.
-3. New interop methods can be called from Python without needing window objects or WPF classes.
-4. No user-visible workflow change yet.
+1. Create base `.csproj` file (`ExcelExporterImporter.base.csproj`)
+   - Move all common properties (RootNamespace, PlatformTarget, DefineConstants, references via `$(RevitYear)` placeholder)
+   - Add `obj/` folder exclusion for compilation (as per article)
+   - Add dynamic Revit API reference paths: `dependencies\$(RevitYear)\RevitAPI.dll`
 
-Prompt to give Copilot:
-Implement Sprint 2 only. Create a clean C# backend facade for the future pyRevit Python UI while preserving the existing WPF launcher. Add DTOs and service-style interop methods for loading exportable schedules, loading standards options, inspecting an import workbook, and executing export or import requests. The new public API must not expose WPF types, dialog types, or window handles. Keep ExcelExporterImporterInterop.ShowMainWindow(...) working exactly as it does now. Do not replace the UI yet. Keep the changes minimal and production-safe, update documentation for the new interop boundary, and verify the project still builds cleanly.
+2. Create `.csproj` paths file (`ExcelExporterImporter.paths.csproj`)
+   - Define version-specific intermediate output paths to separate .NET Framework 4.8.1 build artifacts (2024) from .NET 8.0 artifacts (2025-2027)
+   - Set `MSBuildProjectExtensionsPath`, `BaseIntermediateOutputPath`, `IntermediateOutputPath` to `obj\$(RevitYear)\`
 
-**Sprint 3**
-Goal: move business workflow out of `MainViewModel`.
+3. Create four version-specific `.csproj` files (_one per version_):
+   - `ExcelExporterImporter.2024.csproj`: `<RevitYear>2024</RevitYear>`, `<TargetFramework>net481</TargetFramework>`
+   - `ExcelExporterImporter.2025.csproj`: `<RevitYear>2025</RevitYear>`, `<TargetFramework>net8.0</TargetFramework>`
+   - `ExcelExporterImporter.2026.csproj`: `<RevitYear>2026</RevitYear>`, `<TargetFramework>net8.0</TargetFramework>`
+   - `ExcelExporterImporter.2027.csproj`: `<RevitYear>2027</RevitYear>`, `<TargetFramework>net10.0</TargetFramework>`
+   - Each imports: `ExcelExporterImporter.paths.csproj`, then `ExcelExporterImporter.base.csproj`
 
-What gets done:
-1. Extract orchestration from MainViewModel.cs.
-2. Move schedule discovery, standards discovery, import workbook inspection, overwrite rules, progress coordination, and result summaries into backend service classes.
-3. Keep Revit transactions and EPPlus logic in C#.
-4. Keep the WPF UI working by having it use the new backend services.
+4. Remove old `ExcelExporterImporter.csproj` from the solution; add the four new `.csproj` files
+   - Verify all four projects build successfully with correct frameworks and output paths
 
-Definition of done:
-1. The WPF UI still behaves the same.
-2. The new service layer is reusable from both WPF and Python.
-3. `MainViewModel` is clearly smaller and less coupled.
-4. Export and import smoke tests still pass.
+---
 
-Prompt to give Copilot:
-Implement Sprint 3 only. Refactor the current C# WPF code so that MainViewModel no longer owns most of the business workflow. Extract non-visual orchestration into backend service classes that can be reused by both the existing WPF UI and a future pyRevit Python UI. Focus on schedule discovery, standards discovery, import workbook inspection, export/import coordination, overwrite decision inputs, progress reporting, and result summaries. Keep all Revit transactions and Excel logic in C#. Preserve existing behavior and keep the WPF UI working. Do not build the Python UI in this sprint. Validate by ensuring the legacy flow still compiles and the same manual export/import smoke tests can still be run.
+**Phase 2: Update Conditional Compilation (Code Changes)**
 
-Validation Results (Sprint 3):
-- Date: 2026-04-15
-- Revit versions tested: 2025, 2026
-- Scenarios run: Export flow and import flow validated on legacy WPF path
-- Result: Passed
+5. Update DefineConstants in base `.csproj` 
+   - Change from `REVIT$(RevitVersion)` → keep as `REVIT$(RevitYear)` for consistency
+   - Results in: `REVIT2024`, `REVIT2025`, `REVIT2026`, `REVIT2027`
 
-**Sprint 4**
-Goal: build the real pyRevit Python UI.
+6. **Remove legacy conditional blocks** in source files (pre-2024 code):
+   - RevitUtilities.cs: Remove `#if REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021` block (WallFoundation handling)
+   - StandardsExporter.cs: Remove all `#if REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021` blocks for parameter iteration and shared parameter handling (3 blocks total: lines 391-435, 464-471, 499-511)
+   - Keep code that was in the `#else` block as the new default (2024+ behavior)
 
-What gets done:
-1. Replace the launcher-only Python layer with a Python-owned export/import workflow.
-2. Use the new C# facade instead of `ShowMainWindow(...)`.
-3. Handle file picking, user choices, confirmations, progress, and results in Python.
-4. Keep the legacy WPF path available as fallback.
+7. **Add version-specific code for 2024-2027 API changes** (if applicable):
+   - ElementId: Add `#if !REVIT2024` conditional for `.Value` property usage (2024 uses `.IntegerValue`)
+   - Other 2024-2026 API deprecations: Mark deprecated calls with `#if REVIT2024` if compatibility needed across versions
+   - .NET 10 features (2027): Add `#if REVIT2027` for any .NET 10–specific APIs if used
 
-Definition of done:
-1. Export works from the Python UI without opening the WPF window.
-2. Import works from the Python UI without opening the WPF window.
-3. The legacy WPF launcher still exists as fallback.
-4. The pyRevit extension still stages and loads properly.
+---
 
-Prompt to give Copilot:
-Implement Sprint 4 only. Build a real pyRevit Python UI on top of the C# backend facade created in earlier sprints. The Python layer should own user interaction: selecting export items, selecting import files, choosing standards, confirming overwrites, showing progress, and displaying results. Do not call ShowMainWindow(...) for the new path. Keep the legacy WPF launcher available as fallback, ideally as a separate command or clearly isolated option. Use the existing loader and extension structure in axis/ExcelExporterImporter.extension. Keep the design practical and maintainable rather than visually matching the old WPF window exactly. Verify the extension still stages, loads, and calls the backend successfully.
+**Phase 3: Build Scripts & Dependency Management**
 
-Validation Results (Sprint 4):
-- Date: 2026-04-15
-- Revit versions tested: 2025, 2026
-- Scenarios run: Python workflow chooser appeared; export schedules, export standards, and import workbook paths exercised; Legacy WPF fallback button still opens original C# WPF window
-- Result: Passed
+8. Update Build-PyRevitHybrid.ps1
+   - Change default parameter: `[string[]]$RevitVersions = @("2024", "2025", "2026", "2027")`
+   - Update project reference loop to build `*.2024.csproj`, `*.2025.csproj`, `*.2026.csproj`, `*.2027.csproj` instead of single `.csproj`
+   - Verify output paths for version-specific DLLs: Revit2024, `...Revit2025/`, etc.
 
-**Sprint 5**
-Goal: make it safe for office deployment.
+9. **Acquire Revit 2024 SDK**:
+   - Copy Revit 2024 API DLLs to `dependencies/2024/` folder structure (AdWindows.dll, RevitAPI.dll, RevitAPIUI.dll)
+   - Verify `RevitInstallRoot` for 2024 resolves correctly in build script
 
-What gets done:
-1. Add structured logging and better error handling across Python and C#.
-2. Add support-oriented documentation: pilot rollout, rollback, troubleshooting, log collection.
-3. Add backend-focused tests where practical.
-4. Keep the Python UI as pilot or recommended path depending on verification outcome.
-5. Update log4net from 2.0.3 to a version without known CVEs (NU1902/NU1904 flagged in Sprint 1 build output).
+10. **Update dependencies for .NET 8.0 / .NET 10** (if needed):
+    - Review NuGet packages for 2025+ .NET 8.0 / 2027 .NET 10 compatibility
+    - Add binding redirects to `app.config` if Microsoft.Extensions versions conflict (esp. for 2025-2027)
 
-Definition of done:
-1. Errors are actionable and logs are predictable.
-2. The repo contains rollout and rollback instructions.
-3. Regression checks are documented and repeatable.
-4. The team can support it without reading the whole codebase.
+---
 
-Prompt to give Copilot:
-Implement Sprint 5 only. Harden the new pyRevit Python UI plus C# backend for mission-critical office deployment. Add structured logging, better error handling, clearer operation summaries, and support-oriented documentation. Document pilot rollout, rollback, troubleshooting, and regression checks. Add automated backend tests where practical, and clearly document manual validation where automation is not feasible. Do not remove the legacy WPF fallback unless the repo already has strong verification and the changes are clearly production-ready. Keep the final result conservative, supportable, and easy for non-expert maintainers to operate.
+**Phase 4: Verification & Build Testing**
 
-## How You Should Run This
+11. **Parallel test builds** (one per .csproj file):
+    - Build Debug | Any CPU for each version-specific project
+    - Verify output in: `bin\Debug\Revit20XX\net[481|8.0|10.0]\ExcelExporterImporter.dll`
+    - Check `.csproj` file syntax in VS Properties dialog (All Frameworks dropdown)
 
-Do not ask Copilot to do all 5 sprints at once. Give it one sprint, let it finish, test that sprint, then move to the next.
+12. **Conditional compilation verification**:
+    - In each project, hover over preprocessor symbols in source files to confirm correct symbols are visible (REVIT2024 only in 2024 project, REVIT2025+2026 in 2025/2026 projects, etc.)
+    - Verify greyed-out code in VS matches expectations for each version
 
-Your working loop should be:
-1. Paste one sprint prompt.
-2. Let Copilot make the changes.
-3. Run the build and your smoke tests.
-4. If that sprint works, move to the next one.
-5. If it does not, keep Copilot on that same sprint until it is stable.
+13. **Run full build script**:
+    - Execute: `.\Build-PyRevitHybrid.ps1 -RevitVersions 2024,2025,2026,2027`
+    - Outputs should land in `axis/ExcelExporterImporter.extension/bin/Revit20XX/net8.0-windows/`
 
-## My recommendation
+---
 
-Start with Sprint 1 exactly as written. Sprint 1 is low risk and gives you a much safer base for the harder refactor work.
+## Relevant Files
 
-I also saved this sprint plan into session memory so we can keep refining it. If you want, the next useful step is:
-1. I turn Sprint 1 into an even more detailed checklist you can use line by line with Copilot.
-2. I turn Sprint 2 into the exact C# facade design before you implement it.
-3. I write you a “how to supervise Copilot” guide so you know when to accept or reject its changes.
+- ExcelExporterImporter.csproj → **Replace with:**
+  - `ExcelExporterImporter.base.csproj` (abstracted common properties)
+  - `ExcelExporterImporter.paths.csproj` (version-specific intermediate paths)
+  - `ExcelExporterImporter.2024.csproj` (new)
+  - `ExcelExporterImporter.2025.csproj` (new)  
+  - `ExcelExporterImporter.2026.csproj` (new)
+  - `ExcelExporterImporter.2027.csproj` (new)
+
+- RevitUtilities.cs — Remove lines 462-493
+- StandardsExporter.cs — Remove lines 391-435, 464-471, 499-511
+- Build-PyRevitHybrid.ps1 — Update version array and project names
+- ExcelExporterImporter.sln — Remove old `.csproj`, add four new ones
+- Create `dependencies/2024/` folder — Add Revit 2024 SDK DLLs
+
+---
+
+## Verification
+
+1. **Build Success**: All four version-specific projects compile without errors
+2. **Output Structure**: DLLs exist in correct paths (`bin/Revit20XX/net[481|8.0|10.0]/ExcelExporterImporter.dll`)
+3. **Conditional Code**: Grep for remaining legacy `#if REVIT201[0-9]` symbols — should find zero matches
+4. **IntelliSense**: Switch between projects in VS solution and verify IntelliSense shows/hides version-specific APIs correctly
+5. **Script Execution**: `Build-PyRevitHybrid.ps1` produces all four versions without errors
+6. **Revision History**: Document API breaking changes by version in code comments or documentation
+
+---
+
+## Decisions
+
+- **Approach**: Use article's abstracted `.csproj` pattern (not single `.csproj` with `-p:RevitVersion=` switch) for cleaner IDE support and IntelliSense
+- **Symbol Naming**: Keep `REVIT2024`, `REVIT2025`, etc. (consistency with current codebase) vs. article's `RV2024` convention
+- **Cleanup Scope**: Remove pre-2024 code only; keep all 2024-2027 code paths for now (conservative approach per user selection)
+- **.NET Framework Split**: Separate `obj/$(RevitYear)` folders to prevent conflicts between .NET Framework 4.8.1 (2024) and .NET Core 8.0/10 (2025-2027) MSBuild artifacts
+
+---
+
+## Further Considerations
+
+1. **Question**: Are there Revit 2024 API breaking changes between ElementId.IntegerValue (2024 still uses it?) and `.Value` (2024+)?
+   - **Recommendation**: Add `#if !REVIT2024 ... #else ...` wrapper for ElementId usage to handle both int and long safely. Verify 2024 API docs confirm `.Value` property exists in 2024.
+
+2. **Question**: Is the pyRevit hybrid extension manifest ([**extension.json**](axis/ExcelExporterImporter.extension/extension.json)) set up to load version-specific assemblies from `bin/Revit20XX/` folders?
+   - **Recommendation**: Review extension.json loader path to ensure it references `bin/Revit%RevitVersion%/` or similar dynamic path. If not, may need to create version-specific symlinks or use runtime version detection.
+
+3. **Question**: Are all dependencies (EPPlus, log4net, Microsoft.Extensions, Ookii.Dialogs) compatible with .NET Framework 4.8.1, .NET 8.0, and .NET 10?
+   - **Recommendation**: Audit ExcelExporterImporter.csproj NuGet versions and app.config binding redirects. May require version-specific PackageReference conditional blocks via `Condition="'$(TargetFramework)'=='net481'"` etc. if major breaking changes exist.
+
+---
+
+**Ready to proceed with implementation?** This plan can be executed as written, with Steps 1-4, 5-7, 8-10, and 11-13 forming four independently verifiable phases.
