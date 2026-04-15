@@ -291,7 +291,6 @@ namespace ExcelExporterImporter.Common
             //
             var sColName11 = scheduleField.GetName(); //Ligne pour facilité le débugage
             var vName11 = (BuiltInParameter) parameterId.Value; //Ligne pour facilité le débugage
-            var sStop121 = "asdfasdf";
             //Il va chercher les paramètres du champs pour permettre l'affichage du bon format
             //----Action selon le type de champ / Action according to the type of field----
             switch (scheduleField.FieldType)

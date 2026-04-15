@@ -384,8 +384,6 @@ namespace ExcelExporterImporter.Common
             RevitUtilities.LockAllColumns(worksheet);
             worksheet.Row(1).Hidden = true;
             RevitUtilities.FormattingTheHeader(worksheet, 2);
-            //Initialization of the starting line
-            var row = 3;
             //Retrieving values to add in the table
             var map = doc.ParameterBindings;
             var it = map.ForwardIterator();
@@ -498,9 +496,8 @@ namespace ExcelExporterImporter.Common
                 RevitUtilities.LockAllColumns(worksheet);
                 worksheet.Row(1).Hidden = true;
                 RevitUtilities.FormattingTheHeader(worksheet, 2);
-                //Initialization of the departure line
-                var row = 3;
 #if REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021
+                var row = 3;
                     foreach (InternalDefinition iItem in ListSharedParam)
                     {
                         SharedParameterElement sItem = doc.GetElement(iItem.Id) as SharedParameterElement;
