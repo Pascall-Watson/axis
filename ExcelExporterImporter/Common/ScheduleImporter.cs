@@ -37,7 +37,6 @@ namespace ExcelExporterImporter.Common
             var rows = worksheet.Dimension.Rows; //Indicates the number of rows the table has
             var fields = new Dictionary<int, ScheduleField>();
             var fieldsCount = schedule.Definition.GetFieldCount();
-            var progressUnit = 1000 / rows;
             //================Create a list with parameters that are read-only=========================
             var readonlyParameters = RevitUtilities.GetListReadOnlyParamater(parametersSettings);
             if (cols >= iColStart && rows >= FirstDataRow)
@@ -108,7 +107,7 @@ namespace ExcelExporterImporter.Common
                             }
                         }
 
-                        progress.Increment(progressUnit);
+                        progress.Increment(1);
                     }
 
                     transaction.Commit();

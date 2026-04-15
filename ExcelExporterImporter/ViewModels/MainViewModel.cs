@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Data;
@@ -17,8 +16,9 @@ using System.Windows.Threading;
 using Autodesk.Revit.DB;
 using ExcelExporterImporter.Annotations;
 using ExcelExporterImporter.Common;
+using ExcelExporterImporter.Interop;
+using ExcelExporterImporter.Services;
 using log4net;
-using OfficeOpenXml;
 using Ookii.Dialogs.Wpf;
 using MessageBox = System.Windows.MessageBox;
 using TaskDialog = Ookii.Dialogs.Wpf.TaskDialog;
@@ -29,15 +29,10 @@ namespace ExcelExporterImporter.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private const int UniqueIdColumn = 1;
-        private const int UniqueIdRow = 1;
-
         private static readonly ILog Logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private readonly Dictionary<string, string> knownStandards = new Dictionary<string, string>();
-        private readonly ParametersSettings parametersSettings;
-        private readonly List<string> readonlyStandards = new List<string>();
+        private readonly BackendWorkflowService backendWorkflowService;
+        private readonly DocumentInventoryService documentInventoryService;
         private readonly Document revitDocument;
-        private readonly Dictionary<string, ViewSchedule> schedulesInModel = new Dictionary<string, ViewSchedule>();
         private readonly Window window;
 
         private BackgroundWorker backgroundWorker;
@@ -49,7 +44,6 @@ namespace ExcelExporterImporter.ViewModels
         private Dispatcher dispatcher;
         private bool enableButtons;
         private bool enableButtonsBasic;
-        private ExcelPackage excelPackageToImport;
         private ExportOptions exportOption = ExportOptions.SeparateTables;
         private ExportOptionsBasic exportOptionBasic = ExportOptionsBasic.SeparateTables;
         private string exportPrefix;
@@ -73,6 +67,8 @@ namespace ExcelExporterImporter.ViewModels
         /// <param name="revitDocument"></param>
         public MainViewModel(Window window, Document revitDocument) : this()
         {
+            documentInventoryService = new DocumentInventoryService();
+            backendWorkflowService = new BackendWorkflowService();
             this.revitDocument = revitDocument;
             this.window = window;
             SelectedTab = 0;
@@ -84,9 +80,6 @@ namespace ExcelExporterImporter.ViewModels
             EnableButtonsBasic = true;
             ButtonText = Resources.TitleBtnExport;
             IconButton = Constants.IconExportButton;
-            ParametersSettings.LoadFromFile(
-                Path.GetDirectoryName(Assembly.GetAssembly(GetType()).Location) + "\\ParametersSettings.xml",
-                out parametersSettings);
             FillLists();
         }
 
@@ -429,67 +422,17 @@ namespace ExcelExporterImporter.ViewModels
         /// </summary>
         private void FillLists()
         {
-            //ElementId sheetCategoryElement = new ElementId(BuiltInCategory.OST_Sheets);// Variable for validation
-            //He retrieves the list of Schedules
-            var viewSchedules = new FilteredElementCollector(revitDocument).OfClass(typeof(ViewSchedule));
-            foreach (ViewSchedule viewSchedule in viewSchedules)
+            foreach (var schedule in documentInventoryService.GetExportableSchedules(revitDocument))
             {
-                if (viewSchedule.IsTitleblockRevisionSchedule) continue;
-
-                SchedulesList.Add(new CheckedListItem<string>(viewSchedule.Id.ToString(), viewSchedule.Name,
-                    viewSchedule));
-                SchedulesListBasic.Add(new CheckedListItem<string>(viewSchedule.Id.ToString(), viewSchedule.Name,
-                    viewSchedule));
-                schedulesInModel.Add(viewSchedule.UniqueId, viewSchedule);
+                SchedulesList.Add(new CheckedListItem<string>(schedule.UniqueId, schedule.Name, schedule));
+                SchedulesListBasic.Add(new CheckedListItem<string>(schedule.UniqueId, schedule.Name, schedule));
             }
 
-            StandardsList = new ObservableCollection<CheckedListItem<string>>
+            StandardsList.Clear();
+            foreach (var standard in documentInventoryService.GetExportableStandards())
             {
-                new CheckedListItem<string>(Constants.StandardsGroupLineStylesUniqueId, Constants.StandardsLineStyles,
-                    new List<string> {Constants.StandardsGroupItemLineStylesUniqueId}),
-                new CheckedListItem<string>(Constants.StandardsGroupObjectStylesUniqueId,
-                    Constants.StandardsObjectStyles,
-                    new List<string>
-                    {
-                        Constants.StandardsGroupItemAnnotationObjectsUniqueId,
-                        Constants.StandardsGroupItemModelObjectsUniqueId,
-                        Constants.StandardsGroupItemAnalyticalModelObjectsUniqueId
-                    }),
-                new CheckedListItem<string>(Constants.StandardsGroupFamilyListingUniqueId,
-                    Constants.StandardsFamilyListing,
-                    new List<string> {Constants.StandardsGroupItemFamilyListingUniqueId}),
-                new CheckedListItem<string>(Constants.StandardsGroupSharedParametersUniqueId,
-                    Constants.StandardsSharedParametersSettings,
-                    new List<string> {Constants.StandardsGroupItemProjectSharedParametersSettingsUniqueId}),
-                new CheckedListItem<string>(Constants.StandardsGroupProjectParametersUniqueId,
-                    Constants.StandardsProjectParametersSettings,
-                    new List<string> {Constants.StandardsGroupItemProjectParametersSettingsUniqueId}),
-                new CheckedListItem<string>(Constants.StandardsGroupProjectInformationUniqueId,
-                    Constants.StandardsProjectInformation,
-                    new List<string> {Constants.StandardsGroupItemProjectInformationUniqueId})
-            };
-            //Variable used for import
-            knownStandards.Add(Constants.StandardsGroupItemLineStylesUniqueId, Constants.StandardsLineStyles);
-            knownStandards.Add(Constants.StandardsGroupItemAnnotationObjectsUniqueId,
-                Constants.StandardsAnnotationObjects);
-            knownStandards.Add(Constants.StandardsGroupItemModelObjectsUniqueId, Constants.StandardsModelObjects);
-            knownStandards.Add(Constants.StandardsGroupItemAnalyticalModelObjectsUniqueId,
-                Constants.StandardsAnalyticalModelObjects);
-            knownStandards.Add(Constants.StandardsGroupItemSheetListingUniqueId, Constants.StandardsSheetListing);
-            knownStandards.Add(Constants.StandardsGroupItemViewListingUniqueId, Constants.StandardsViewListing);
-            knownStandards.Add(Constants.StandardsGroupItemProjectInformationUniqueId,
-                Constants.StandardsProjectInformation);
-            knownStandards.Add(Constants.StandardsGroupItemMaterialsUniqueId, Constants.StandardsMaterials);
-            knownStandards.Add(Constants.StandardsGroupItemProjectParametersSettingsUniqueId,
-                Constants.StandardsProjectParameters);
-            knownStandards.Add(Constants.StandardsGroupItemProjectSharedParametersSettingsUniqueId,
-                Constants.StandardsProjectSharedParameters);
-            knownStandards.Add(Constants.StandardsGroupItemFamilyListingUniqueId, Constants.StandardsFamilyListing);
-
-
-            readonlyStandards.Add(Constants.StandardsGroupItemFamilyListingUniqueId);
-            readonlyStandards.Add(Constants.StandardsGroupItemProjectSharedParametersSettingsUniqueId);
-            readonlyStandards.Add(Constants.StandardsGroupItemProjectParametersSettingsUniqueId);
+                StandardsList.Add(new CheckedListItem<string>(standard.GroupUniqueId, standard.DisplayName, standard));
+            }
         }
 
         /// <summary>
@@ -585,10 +528,8 @@ namespace ExcelExporterImporter.ViewModels
         private void Export(string sTypeExport)
         {
             if (string.IsNullOrEmpty(sTypeExport)) sTypeExport = "Schedules";
-            // We will retrieve the contents of the lists
             var schedules = SchedulesList.Where(sl => sl.IsChecked).ToList();
             var standards = StandardsList.Where(s => s.IsChecked).ToList();
-            //Initializing the file list to overwrite
 
             var sRevitFilename = Path.GetFileNameWithoutExtension(revitDocument.PathName);
             if (string.IsNullOrEmpty(sRevitFilename))
@@ -618,12 +559,10 @@ namespace ExcelExporterImporter.ViewModels
                 };
                 if (ExporttDlg.ShowDialog() == DialogResult.OK)
                 {
-                    var FilesToOverwrite_Schedules = new List<FileInfo>();
                     fiExportFile = new FileInfo(ExporttDlg.FileName);
                     ExportFolder = fiExportFile.DirectoryName;
-                    //If the file already exists, add it to the list of files to overwrite
-                    if (fiExportFile.Exists) FilesToOverwrite_Schedules.Add(fiExportFile);
-                    if (DeleteExistFile(FilesToOverwrite_Schedules))
+                    var filesToOverwrite = backendWorkflowService.GetExistingFiles(new[] { fiExportFile.FullName }).ToList();
+                    if (DeleteExistFile(filesToOverwrite))
                     {
                         sFileExport = sTypeExport;
                         ExecuteExport();
@@ -646,11 +585,10 @@ namespace ExcelExporterImporter.ViewModels
                 };
                 if (ExporttDlg.ShowDialog() == DialogResult.OK)
                 {
-                    var FilesToOverwrite_Standards = new List<FileInfo>();
                     fiExportFile = new FileInfo(ExporttDlg.FileName);
-                    //If the file already exists, add it to the list of files to overwrite
-                    if (fiExportFile.Exists) FilesToOverwrite_Standards.Add(fiExportFile);
-                    if (DeleteExistFile(FilesToOverwrite_Standards))
+                    ExportFolder = fiExportFile.DirectoryName;
+                    var filesToOverwrite = backendWorkflowService.GetExistingFiles(new[] { fiExportFile.FullName }).ToList();
+                    if (DeleteExistFile(filesToOverwrite))
                     {
                         sFileExport = "Standards";
                         ExecuteExport();
@@ -782,48 +720,23 @@ namespace ExcelExporterImporter.ViewModels
                 NotImportItemList.Clear();
                 CheckAllImport = false;
 
-                if (excelPackageToImport != null) excelPackageToImport.Dispose();
+                var inspection = documentInventoryService.InspectImportWorkbook(revitDocument, ImportFolder);
+                bExcelFileValid = inspection.IsValidWorkbook;
 
-                excelPackageToImport = new ExcelPackage(fileInfo);
-
-
-                foreach (var worksheet in excelPackageToImport.Workbook.Worksheets)
+                foreach (var importableItem in inspection.ImportableItems)
                 {
-                    //Read schedule guid
-                    var itemUniqueId = Convert.ToString(worksheet.Cells[1, 1].Value);
-                    if (Constants.LegendUniqueId == itemUniqueId)
-                    {
-                        bExcelFileValid = true;
-                    }
-                    else if (schedulesInModel.ContainsKey(itemUniqueId))
-                    {
-                        bExcelFileValid = true;
-                        var viewSchedule = schedulesInModel[itemUniqueId];
-                        if (viewSchedule.IsTitleblockRevisionSchedule || viewSchedule.Definition.IsMaterialTakeoff)
-                        {
-                            NotImportItemList.Add(new CheckedListItem<string>(itemUniqueId,
-                                schedulesInModel[itemUniqueId].Name, worksheet));
-                            continue;
-                        }
+                    ImportItemList.Add(new CheckedListItem<string>(
+                        importableItem.UniqueId,
+                        importableItem.DisplayName,
+                        importableItem));
+                }
 
-                        ImportItemList.Add(new CheckedListItem<string>(itemUniqueId,
-                            schedulesInModel[itemUniqueId].Name, worksheet));
-                    }
-                    else if (knownStandards.ContainsKey(itemUniqueId) && !readonlyStandards.Contains(itemUniqueId))
-                    {
-                        bExcelFileValid = true;
-                        ImportItemList.Add(new CheckedListItem<string>(itemUniqueId, knownStandards[itemUniqueId],
-                            worksheet));
-                    }
-                    else if (readonlyStandards.Contains(itemUniqueId))
-                    {
-                        NotImportItemList.Add(new CheckedListItem<string>(itemUniqueId, knownStandards[itemUniqueId],
-                            worksheet));
-                    }
-                    else
-                    {
-                        NotImportItemList.Add(new CheckedListItem<string>(worksheet.Name, worksheet.Name, worksheet));
-                    }
+                foreach (var readOnlyItem in inspection.ReadOnlyItems)
+                {
+                    NotImportItemList.Add(new CheckedListItem<string>(
+                        readOnlyItem.UniqueId,
+                        readOnlyItem.DisplayName,
+                        readOnlyItem));
                 }
 
                 if (ImportItemList.Count == 0)
@@ -867,191 +780,92 @@ namespace ExcelExporterImporter.ViewModels
         {
             dispatcher.Invoke(() =>
             {
+                OperationResult result = null;
                 cancellationTokenSource = new CancellationTokenSource();
                 var schedules = SchedulesList.Where(sl => sl.IsChecked).ToList();
                 var standards = StandardsList.Where(s => s.IsChecked).ToList();
 
-                progress.Start((standards.Count() + schedules.Count()) * 15, "Exporting Revit Schedules");
-                if (sFileExport == "Schedules") //Call the function to export schedules
-                    ExportSchedules(schedules);
-                if (sFileExport == "Standards") //Call the function to export the standards
-                    ExportStandards(standards);
-                if (sFileExport == "Basic") ExportSchedulesBasic(schedules);
-                progress.End();
+                try
+                {
+                    if (sFileExport == "Schedules")
+                    {
+                        var request = new ExportSchedulesRequest
+                        {
+                            OutputFilePath = fiExportFile.FullName,
+                            UseBasicMode = false
+                        };
+                        foreach (var schedule in schedules)
+                            request.ScheduleUniqueIds.Add(schedule.Id);
 
-                if (!cancellationTokenSource.IsCancellationRequested)
+                        progress.Start(backendWorkflowService.EstimateScheduleExportProgressMaximum(request),
+                            "Exporting Revit Schedules");
+                        result = backendWorkflowService.ExecuteExportSchedules(
+                            revitDocument,
+                            request,
+                            cancellationTokenSource.Token,
+                            progress,
+                            ExportOption == ExportOptions.SeparateFiles);
+                    }
+                    else if (sFileExport == "Standards")
+                    {
+                        var request = new ExportStandardsRequest
+                        {
+                            OutputFilePath = fiExportFile.FullName
+                        };
+                        foreach (var standard in standards)
+                            request.StandardGroupUniqueIds.Add(standard.Id);
+
+                        progress.Start(backendWorkflowService.EstimateStandardsExportProgressMaximum(request),
+                            "Exporting Revit Schedules");
+                        result = backendWorkflowService.ExecuteExportStandards(
+                            revitDocument,
+                            request,
+                            cancellationTokenSource.Token,
+                            progress);
+                    }
+                    else if (sFileExport == "Basic")
+                    {
+                        var request = new ExportSchedulesRequest
+                        {
+                            OutputFilePath = fiExportFile.FullName,
+                            UseBasicMode = true
+                        };
+                        foreach (var schedule in schedules)
+                            request.ScheduleUniqueIds.Add(schedule.Id);
+
+                        progress.Start(backendWorkflowService.EstimateScheduleExportProgressMaximum(request),
+                            "Exporting Revit Schedules");
+                        result = backendWorkflowService.ExecuteExportSchedules(
+                            revitDocument,
+                            request,
+                            cancellationTokenSource.Token,
+                            progress);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Logger.Error(exception.Message, exception);
+                    MessageBox.Show(window, string.Format(Resources.ExportErrorMessage, exception.Message),
+                        Resources.Error, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    progress.End();
+                }
+
+                if (result == null || cancellationTokenSource.IsCancellationRequested)
+                    return;
+
+                if (result.Errors.Any())
+                {
+                    ShowExportErrors(result.Errors);
+                }
+                else
+                {
                     MessageBox.Show(window, Resources.ExportProcessCompleteMessage, Resources.ProcessCompleteTitle,
                         MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             });
-            // ***********************
-        }
-
-        /// <summary>
-        ///     Export Worker Basic
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ExportWorkerBasic(object sender, DoWorkEventArgs e)
-        {
-            dispatcher.Invoke(() =>
-            {
-                cancellationTokenSource = new CancellationTokenSource();
-                var schedules = SchedulesList.Where(sl => sl.IsChecked).ToList();
-
-                progress.Start(schedules.Count() * 15, "Exporting Revit Schedules");
-
-                //Call the function to export schedules
-                ExportSchedulesBasic(schedules);
-                progress.End();
-
-                if (!cancellationTokenSource.IsCancellationRequested)
-                    MessageBox.Show(window, Resources.ExportProcessCompleteMessage, Resources.ProcessCompleteTitle,
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-            });
-            // ***********************
-        }
-
-        /// <summary>
-        ///     Export schedules
-        /// </summary>
-        /// <param name="schedules"></param>
-        private void ExportSchedules(List<CheckedListItem<string>> schedules)
-        {
-            if (schedules.Any())
-            {
-                ExcelPackage excelPackage = null;
-                var createdPackages = new List<ExcelPackage>();
-                excelPackage = new ExcelPackage(fiExportFile);
-                createdPackages.Add(excelPackage);
-
-                var worksheetNames = new Hashtable();
-                var scheduleExporter = new ScheduleExporter(cancellationTokenSource.Token);
-                foreach (var schedule in schedules)
-                {
-                    if (cancellationTokenSource.IsCancellationRequested) break;
-
-                    var viewSchedule = schedule.Object as ViewSchedule;
-                    if (viewSchedule == null) continue;
-
-                    //There is a 31 characters limit for a worksheet in excel. We need to trim the end and try to prevent collisons.
-                    var name = schedule.Item;
-
-                    //These characters are not allowed in excel worksheet
-                    name = Regex.Replace(name, ":|\\?|/|\\\\|\\[|\\]|\\*", " ");
-
-                    name = name.Length > 31 ? name.Substring(0, 28) + "001" : name;
-
-                    var suffixNumber = 2;
-                    while (worksheetNames[name] != null)
-                    {
-                        var suffix = suffixNumber++.ToString().PadLeft(3, '0');
-                        name = name.Substring(0, Math.Min(name.Length, 28)) + suffix;
-                    }
-
-                    worksheetNames[name] = true;
-                    var workSheet = excelPackage.Workbook.Worksheets.Add(name);
-                    progress.Increment(5);
-                    progress.SetStatus(string.Format(Resources.ExportProgressExporting, viewSchedule.Name));
-                    scheduleExporter.ExportViewSchedule(revitDocument, viewSchedule, workSheet, parametersSettings);
-                    if (ExportOption == ExportOptions.SeparateFiles
-                    ) //Addition of the legend tab for each excel file created
-                    {
-                        var WorkSheetLegendColor = excelPackage.Workbook.Worksheets.Add(Resources.clLegend);
-                        ColorLegend.Add(WorkSheetLegendColor);
-                    }
-
-                    progress.Increment(5);
-                }
-
-                if (ExportOption == ExportOptions.SeparateTables
-                ) //Addition of the legend tab when all the tables are in the same excel file
-                {
-                    var WorkSheetLegendColor = excelPackage.Workbook.Worksheets.Add(Resources.clLegend);
-                    ColorLegend.Add(WorkSheetLegendColor);
-                }
-
-                foreach (var createdPackage in createdPackages)
-                {
-                    createdPackage.Save();
-                    createdPackage.Dispose();
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Export schedules in basic mode
-        /// </summary>
-        /// <param name="schedules"></param>
-        private void ExportSchedulesBasic(List<CheckedListItem<string>> schedules)
-        {
-            if (schedules.Any())
-            {
-                ExcelPackage excelPackage = null;
-                var createdPackages = new List<ExcelPackage>();
-                excelPackage = new ExcelPackage(fiExportFile);
-                createdPackages.Add(excelPackage);
-
-                var worksheetNames = new Hashtable();
-                var scheduleExporter = new ScheduleExporter(cancellationTokenSource.Token);
-                foreach (var schedule in schedules)
-                {
-                    if (cancellationTokenSource.IsCancellationRequested) break;
-                    var viewSchedule = schedule.Object as ViewSchedule;
-                    if (viewSchedule == null) continue;
-                    //There is a 31 characters limit for a worksheet in excel. We need to trim the end and try to prevent collisons.
-                    var name = schedule.Item;
-
-                    //These characters are not allowed in excel worksheet
-                    name = Regex.Replace(name, ":|\\?|/|\\\\|\\[|\\]|\\*", " ");
-
-                    name = name.Length > 31 ? name.Substring(0, 28) + "001" : name;
-
-                    var suffixNumber = 2;
-                    while (worksheetNames[name] != null)
-                    {
-                        var suffix = suffixNumber++.ToString().PadLeft(3, '0');
-                        name = name.Substring(0, Math.Min(name.Length, 28)) + suffix;
-                    }
-
-                    worksheetNames[name] = true;
-                    var workSheet = excelPackage.Workbook.Worksheets.Add(name);
-                    progress.Increment(5);
-                    progress.SetStatus(string.Format(Resources.ExportProgressExporting, viewSchedule.Name));
-                    scheduleExporter.ExportViewScheduleBasic(viewSchedule, workSheet);
-                    progress.Increment(5);
-                }
-
-                foreach (var createdPackage in createdPackages)
-                {
-                    createdPackage.Save();
-                    createdPackage.Dispose();
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Export predefined tables
-        /// </summary>
-        /// <param name="standardsGroups"></param>
-        private void ExportStandards(List<CheckedListItem<string>> standardsGroups)
-        {
-            var standardsExporter = new StandardsExporter(cancellationTokenSource.Token);
-            if (standardsGroups.Any())
-            {
-                var excelPackage = new ExcelPackage(fiExportFile);
-                foreach (var standardGroup in standardsGroups)
-                {
-                    if (cancellationTokenSource.IsCancellationRequested) return;
-                    progress.Increment(5);
-                    var workbook = excelPackage.Workbook;
-                    progress.SetStatus(string.Format(Resources.Exporting, standardGroup.Item));
-                    //Appel la fonction pour l'exportation des fichiers standard / Call the function for exporting standard files
-                    standardsExporter.ExportStandard(standardGroup.Id, revitDocument, workbook, parametersSettings);
-                    progress.Increment(10);
-                }
-
-                excelPackage.Save();
-            }
         }
 
         /// <summary>
@@ -1065,6 +879,7 @@ namespace ExcelExporterImporter.ViewModels
             {
                 try
                 {
+                    OperationResult result;
                     cancellationTokenSource = new CancellationTokenSource();
                     if (string.IsNullOrEmpty(ImportFolder))
                     {
@@ -1080,79 +895,28 @@ namespace ExcelExporterImporter.ViewModels
                         return;
                     }
 
-                    var fileInfo = new FileInfo(ImportFolder);
-
-                    if (fileInfo.IsFileLocked())
+                    var request = new ImportRequest
                     {
-                        MessageBox.Show(window, Resources.FileInUseMessage, Resources.FileInUseTitle,
-                            MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
+                        WorkbookFilePath = ImportFolder
+                    };
+
+                    foreach (var importItem in ImportItemList.Where(i => i.IsChecked))
+                    {
+                        request.ItemUniqueIds.Add(importItem.Id);
                     }
 
-                    var selectedWorksheets = ImportItemList.Where(i => i.IsChecked)
-                        .Select(item => (ExcelWorksheet) item.Object).ToList();
-                    var rowCounts = selectedWorksheets.Sum(ws => ws.Dimension == null ? 0 : ws.Dimension.Rows);
-                    var maxProgressValue = selectedWorksheets.Count() * 10 + rowCounts;
-
-                    progress.Start(maxProgressValue, Resources.ProgressImportingExcelData);
-                    var scheduleImporter = new ScheduleImporter(cancellationTokenSource.Token);
-                    var standardsImporter = new StandardsImporter(cancellationTokenSource.Token);
-                    var errors = new List<string>();
-                    foreach (var worksheet in selectedWorksheets)
-                    {
-                        if (cancellationTokenSource.IsCancellationRequested) break;
-                        var uniqueId = worksheet.Cells[UniqueIdRow, UniqueIdColumn].Value.ToString();
-                        //Remove the schedule guid row.
-                        if (schedulesInModel.ContainsKey(uniqueId))
-                        {
-                            var schedule = schedulesInModel[uniqueId];
-
-                            progress.Increment(5);
-                            try
-                            {
-                                scheduleImporter.ImportViewSchedule(revitDocument, worksheet, schedule, progress,
-                                    parametersSettings);
-                            }
-                            catch (Exception ex)
-                            {
-                                errors.Add(string.Format(Resources.Schedule2, schedule.Name, ex.Message));
-                                Logger.Error(ex.ToString());
-                            }
-
-                            progress.Increment(5);
-                        }
-                        else if (knownStandards.ContainsKey(uniqueId))
-                        {
-                            progress.Increment(5);
-                            try
-                            {
-                                ImportStandards(uniqueId, standardsImporter, worksheet);
-                            }
-                            catch (Exception ex)
-                            {
-                                errors.Add(string.Format(Resources.Standard, knownStandards[uniqueId], ex.Message));
-                                Logger.Error(ex.ToString());
-                            }
-
-                            progress.Increment(5);
-                        }
-                    }
+                    progress.Start(backendWorkflowService.EstimateImportProgressMaximum(request),
+                        Resources.ProgressImportingExcelData);
+                    result = backendWorkflowService.ExecuteImport(
+                        revitDocument,
+                        request,
+                        cancellationTokenSource.Token,
+                        progress);
 
                     progress.End();
 
-                    if (errors.Any())
-                        using (var td = new TaskDialog())
-                        {
-                            td.WindowTitle = Resources.CompletedWithErrors;
-                            td.Content = Resources.TheImportProcessWasCompletedWithErrors;
-                            td.MainIcon = TaskDialogIcon.Warning;
-                            td.MainInstruction = Resources.SomeElementsCouldNotBeImported;
-                            td.ExpandedInformation = string.Join(Environment.NewLine, errors);
-                            td.CollapsedControlText = Resources.ViewDetails;
-                            var okButton = new TaskDialogButton(ButtonType.Ok);
-                            td.Buttons.Add(okButton);
-                            td.ShowDialog();
-                        }
+                    if (result.Errors.Any())
+                        ShowImportErrors(result.Errors);
                     else
                         MessageBox.Show(window, Resources.ImportProcessCompleteMessage, Resources.ProcessCompleteTitle,
                             MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1168,46 +932,6 @@ namespace ExcelExporterImporter.ViewModels
         }
 
         /// <summary>
-        ///     Import tables export in standard mode
-        /// </summary>
-        /// <param name="uniqueId"></param>
-        /// <param name="standardsImporter"></param>
-        /// <param name="worksheet"></param>
-        private void ImportStandards(string uniqueId, StandardsImporter standardsImporter, ExcelWorksheet worksheet)
-        {
-            switch (uniqueId)
-            {
-                case Constants.StandardsGroupItemLineStylesUniqueId:
-                    standardsImporter.ImportLineStyles(revitDocument, worksheet, progress);
-                    break;
-
-                case Constants.StandardsGroupItemAnnotationObjectsUniqueId:
-                    standardsImporter.ImportAnnotationObjects(revitDocument, worksheet, progress);
-                    break;
-
-                case Constants.StandardsGroupItemModelObjectsUniqueId:
-                    standardsImporter.ImportModelObjects(revitDocument, worksheet, progress);
-                    break;
-
-                case Constants.StandardsGroupItemAnalyticalModelObjectsUniqueId:
-                    standardsImporter.ImportAnalyticalModelObjects(revitDocument, worksheet, progress);
-                    break;
-
-                case Constants.StandardsGroupItemProjectInformationUniqueId:
-                    standardsImporter.ImportProjectInformation(revitDocument, worksheet, progress, parametersSettings);
-                    break;
-
-                case Constants.StandardsGroupItemFamilyListingUniqueId:
-                case Constants.StandardsGroupItemProjectSharedParametersSettingsUniqueId:
-                case Constants.StandardsGroupItemProjectParametersSettingsUniqueId:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException("uniqueId",
-                        uniqueId + " " + Resources.IsNotKnownStandardGuid);
-            }
-        }
-
-        /// <summary>
         ///     Run worker completed
         /// </summary>
         /// <param name="sender"></param>
@@ -1218,13 +942,38 @@ namespace ExcelExporterImporter.ViewModels
             ImportItemList.Clear();
             NotImportItemList.Clear();
             CheckAllImport = false;
-            if (excelPackageToImport != null)
-            {
-                excelPackageToImport.Dispose();
-                excelPackageToImport = null;
-            }
 
             EnableButtons = true;
+        }
+
+        private void ShowExportErrors(IEnumerable<string> errors)
+        {
+            using (var td = new TaskDialog())
+            {
+                td.WindowTitle = Resources.CompletedWithErrors;
+                td.Content = string.Format(Resources.ExportErrorMessage, Resources.CompletedWithErrors);
+                td.MainIcon = TaskDialogIcon.Warning;
+                td.MainInstruction = Resources.CompletedWithErrors;
+                td.ExpandedInformation = string.Join(Environment.NewLine, errors);
+                td.CollapsedControlText = Resources.ViewDetails;
+                td.Buttons.Add(new TaskDialogButton(ButtonType.Ok));
+                td.ShowDialog(window);
+            }
+        }
+
+        private void ShowImportErrors(IEnumerable<string> errors)
+        {
+            using (var td = new TaskDialog())
+            {
+                td.WindowTitle = Resources.CompletedWithErrors;
+                td.Content = Resources.TheImportProcessWasCompletedWithErrors;
+                td.MainIcon = TaskDialogIcon.Warning;
+                td.MainInstruction = Resources.SomeElementsCouldNotBeImported;
+                td.ExpandedInformation = string.Join(Environment.NewLine, errors);
+                td.CollapsedControlText = Resources.ViewDetails;
+                td.Buttons.Add(new TaskDialogButton(ButtonType.Ok));
+                td.ShowDialog(window);
+            }
         }
 
         /// <summary>

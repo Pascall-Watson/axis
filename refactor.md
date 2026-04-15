@@ -69,6 +69,12 @@ Definition of done:
 Prompt to give Copilot:
 Implement Sprint 3 only. Refactor the current C# WPF code so that MainViewModel no longer owns most of the business workflow. Extract non-visual orchestration into backend service classes that can be reused by both the existing WPF UI and a future pyRevit Python UI. Focus on schedule discovery, standards discovery, import workbook inspection, export/import coordination, overwrite decision inputs, progress reporting, and result summaries. Keep all Revit transactions and Excel logic in C#. Preserve existing behavior and keep the WPF UI working. Do not build the Python UI in this sprint. Validate by ensuring the legacy flow still compiles and the same manual export/import smoke tests can still be run.
 
+Validation Results (Sprint 3):
+- Date: 2026-04-15
+- Revit versions tested: 2025, 2026
+- Scenarios run: Export flow and import flow validated on legacy WPF path
+- Result: Passed
+
 **Sprint 4**
 Goal: build the real pyRevit Python UI.
 
@@ -86,6 +92,12 @@ Definition of done:
 
 Prompt to give Copilot:
 Implement Sprint 4 only. Build a real pyRevit Python UI on top of the C# backend facade created in earlier sprints. The Python layer should own user interaction: selecting export items, selecting import files, choosing standards, confirming overwrites, showing progress, and displaying results. Do not call ShowMainWindow(...) for the new path. Keep the legacy WPF launcher available as fallback, ideally as a separate command or clearly isolated option. Use the existing loader and extension structure in axis/ExcelExporterImporter.extension. Keep the design practical and maintainable rather than visually matching the old WPF window exactly. Verify the extension still stages, loads, and calls the backend successfully.
+
+Validation Results (Sprint 4):
+- Date: 2026-04-15
+- Revit versions tested: 2025, 2026
+- Scenarios run: Python workflow chooser appeared; export schedules, export standards, and import workbook paths exercised; Legacy WPF fallback button still opens original C# WPF window
+- Result: Passed
 
 **Sprint 5**
 Goal: make it safe for office deployment.

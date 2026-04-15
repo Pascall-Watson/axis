@@ -110,7 +110,7 @@ namespace ExcelExporterImporter.Common
         ///     Increment the progress value
         /// </summary>
         /// <param name="value"></param>
-        public void Increment(int value)
+        public virtual void Increment(int value)
         {
             _dispatcher.Invoke(() => _progressViewModel.Increment(value));
         }
@@ -119,7 +119,7 @@ namespace ExcelExporterImporter.Common
         ///     Set the status string
         /// </summary>
         /// <param name="status"></param>
-        public void SetStatus(string status)
+        public virtual void SetStatus(string status)
         {
             _dispatcher.Invoke(() => _progressViewModel.SetStatus(status));
         }

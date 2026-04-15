@@ -7,11 +7,122 @@ This repository now includes a hybrid migration scaffold under `axis/`:
 - pyRevit extension wrapper: `axis/ExcelExporterImporter.extension`
 - Python runtime loader: `axis/ExcelExporterImporter.extension/lib/loader.py`
 - pyRevit command button: `axis/ExcelExporterImporter.extension/Excel Tools.tab/Excel Exporter.panel/Launch.pushbutton/script.py`
+- Legacy fallback button: `axis/ExcelExporterImporter.extension/Excel Tools.tab/Excel Exporter.panel/Legacy WPF.pushbutton/script.py`
 - Build/staging script: `scripts/Build-PyRevitHybrid.ps1`
 
-The C# project now accepts a `RevitVersion` build property (`2025`, `2026`) and publishes version-specific outputs. pyRevit loads the matching DLL and calls `ExcelExporterImporter.Interop.ExcelExporterImporterInterop.ShowMainWindow(doc)`.
+The C# project now accepts a `RevitVersion` build property (`2025`, `2026`) and publishes version-specific outputs.
 
-Sprint 1 keeps that behavior unchanged. The pyRevit button is still only a launcher for the existing C# WPF window. There is no Python-owned UI yet.
+Sprint 4 introduces a Python-owned pyRevit workflow for export/import using the C# interop backend service API. The default button no longer calls `ShowMainWindow(...)`.
+
+The original WPF path is still available as a separate fallback button:
+
+- `Excel Exporter Importer` -> Python workflow (export schedules, export standards, import workbook)
+- `Excel Exporter Importer (Legacy WPF)` -> opens the original C# WPF window
+
+This keeps migration risk low while allowing side-by-side validation.
+
+---
+
+## Sprint 2: C# Backend Facade (interop boundary)
+
+Sprint 2 adds a clean, WPF-free backend API in
+`ExcelExporterImporter/Interop/ExcelExporterImporterInterop.cs`.
+Python scripts can call these methods directly via `pythonnet` / `clr.AddReference`
+without needing window handles, dialog types, or any WPF assembly.
+
+### New public types (`ExcelExporterImporter.Interop` namespace)
+
+| Type | Purpose |
+| --- | --- |
+| `ScheduleInfo` | Describes a schedule returned by `GetExportableSchedules` |
+| `StandardInfo` | Describes an exportable standard group returned by `GetExportableStandards` |
+| `ImportWorkbookItem` | One worksheet in an import workbook (importable or read-only) |
+| `ImportWorkbookInspection` | Result of `InspectImportWorkbook` |
+| `ExportSchedulesRequest` | Input for `ExecuteExportSchedules` |
+| `ExportStandardsRequest` | Input for `ExecuteExportStandards` |
+| `ImportRequest` | Input for `ExecuteImport` |
+| `OperationResult` | Result returned by all Execute* methods |
+| `ProgressInfo` | Progress notification passed to the `onProgress` callback |
+
+### New service methods on `ExcelExporterImporterInterop`
+
+```csharp
+// Returns all non-titleblock schedules in the document.
+IReadOnlyList<ScheduleInfo> GetExportableSchedules(Document document)
+
+// Returns the fixed list of exportable standard groups.
+IReadOnlyList<StandardInfo> GetExportableStandards()
+
+// Opens a workbook read-only and reports which items can be imported.
+ImportWorkbookInspection InspectImportWorkbook(Document document, string filePath)
+
+// Exports schedules to an Excel file without showing dialogs.
+OperationResult ExecuteExportSchedules(
+    Document document,
+    ExportSchedulesRequest request,
+    Action<ProgressInfo> onProgress,       // pass null to ignore progress
+    CancellationToken cancellationToken)
+
+// Exports standard groups to an Excel file without showing dialogs.
+OperationResult ExecuteExportStandards(
+    Document document,
+    ExportStandardsRequest request,
+    Action<ProgressInfo> onProgress,
+    CancellationToken cancellationToken)
+
+// Imports selected items from a workbook without showing dialogs.
+OperationResult ExecuteImport(
+    Document document,
+    ImportRequest request,
+    Action<ProgressInfo> onProgress,
+    CancellationToken cancellationToken)
+```
+
+The existing `ShowMainWindow(document)` / `ShowMainWindow(document, ownerHandle)` methods
+are **unchanged**. The WPF launcher continues to work exactly as before.
+
+### Calling the backend from Python (example)
+
+```python
+import clr
+clr.AddReference("ExcelExporterImporter")
+from ExcelExporterImporter.Interop import (
+    ExcelExporterImporterInterop,
+    ExportSchedulesRequest,
+)
+from System.Threading import CancellationToken
+
+# List schedules
+schedules = ExcelExporterImporterInterop.GetExportableSchedules(doc)
+for s in schedules:
+    print(s.Name, s.UniqueId)
+
+# Export two schedules
+request = ExportSchedulesRequest()
+request.OutputFilePath = r"C:\temp\my_export.xlsx"
+request.ScheduleUniqueIds.Add(schedules[0].UniqueId)
+request.ScheduleUniqueIds.Add(schedules[1].UniqueId)
+
+result = ExcelExporterImporterInterop.ExecuteExportSchedules(
+    doc, request, None, CancellationToken.None
+)
+if not result.Success:
+    for err in result.Errors:
+        print("ERROR:", err)
+```
+
+### `StandardInfo.IsReadOnly` flag
+
+Three standard groups are **export-only** and cannot be imported back:
+
+- Family Listing
+- Shared Parameters Settings
+- Project Parameters Settings
+
+`GetExportableStandards()` returns them with `IsReadOnly = True`. They will also appear
+in `ImportWorkbookInspection.ReadOnlyItems` when found in a workbook.
+
+---
 
 ### Build and stage for pyRevit
 
@@ -51,7 +162,8 @@ Use this sequence when validating the hybrid launcher without changing the curre
 4. Register the repo `axis` folder as a pyRevit extension source if it is not already registered.
 5. Reload pyRevit.
 6. Open Revit 2025 or Revit 2026 and run `Excel Tools > Excel Exporter > Excel Exporter Importer`.
-7. Confirm the existing C# WPF window opens.
+7. Confirm the Python workflow opens and you can choose Export Schedules, Export Standards, or Import Workbook.
+8. Confirm `Excel Tools > Excel Exporter > Excel Exporter Importer (Legacy WPF)` still opens the original C# WPF window.
 
 ### Rollback
 
@@ -68,24 +180,33 @@ If you did not create a backup and only want to remove the staged hybrid payload
 
 Run these tests in both Revit 2025 and Revit 2026.
 
-1. Launcher smoke test
+1. Python workflow smoke test
    - Build and stage with `./scripts/Build-PyRevitHybrid.ps1 -Configuration Release`.
    - Reload pyRevit.
    - Open a model with an active document.
-   - Click the pyRevit button and confirm the existing WPF dialog opens.
+   - Click `Excel Exporter Importer` and confirm the Python workflow chooser appears.
 
-2. Export smoke test
-   - In the WPF dialog, select at least one known-good schedule.
-   - Export to a temporary `.xlsx` file.
+2. Export schedules smoke test
+   - In the Python workflow, choose `Export Schedules`.
+   - Select at least one known-good schedule and complete export.
    - Confirm the file is created and opens in Excel.
 
-3. Import smoke test
+3. Export standards smoke test
+   - In the Python workflow, choose `Export Standards`.
+   - Select at least one standards group and complete export.
+   - Confirm the file is created and opens in Excel.
+
+4. Import smoke test
    - Start from a workbook created by the add-in in bidirectional mode.
    - Change one writable value only.
-   - Import the workbook through the same WPF dialog.
+   - In the Python workflow, choose `Import Workbook` and import the updated sheet.
    - Confirm the updated value appears in Revit.
 
-4. Failure-path smoke test
+5. Legacy fallback smoke test
+   - Click `Excel Exporter Importer (Legacy WPF)`.
+   - Confirm the original C# WPF window still opens.
+
+6. Failure-path smoke test
    - If the launcher fails, confirm the pyRevit alert reports the DLL path it loaded or the paths it searched, then follow the suggested rebuild and reload steps.
 
 ## Description
