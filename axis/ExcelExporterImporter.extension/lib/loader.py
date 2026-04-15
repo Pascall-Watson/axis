@@ -7,6 +7,17 @@ import clr
 from pyrevit import HOST_APP
 
 
+class AssemblyLoadError(IOError):
+    """Raised when the hybrid assembly cannot be found or loaded."""
+
+    def __init__(self, message, revit_major, attempted_paths, resolved_path=None, inner_error=None):
+        IOError.__init__(self, message)
+        self.revit_major = revit_major
+        self.attempted_paths = attempted_paths
+        self.resolved_path = resolved_path
+        self.inner_error = inner_error
+
+
 def _extension_root():
     return os.path.dirname(os.path.dirname(__file__))
 
@@ -25,15 +36,31 @@ def _candidate_paths(revit_major):
     ]
 
 
+def _raise_load_error(message, revit_major, attempted_paths, resolved_path=None, inner_error=None):
+    raise AssemblyLoadError(message, revit_major, attempted_paths, resolved_path, inner_error)
+
+
 def load_excel_exporter_importer_assembly():
     """Load the version-matched C# assembly and return loaded path."""
     revit_major = _revit_major_version()
-    for path in _candidate_paths(revit_major):
-        if os.path.exists(path):
-            clr.AddReferenceToFileAndPath(path)
-            return path
+    attempted_paths = _candidate_paths(revit_major)
 
-    raise IOError(
-        "ExcelExporterImporter.dll not found for Revit {0}. "
-        "Expected one of: {1}".format(revit_major, ", ".join(_candidate_paths(revit_major)))
+    for path in attempted_paths:
+        if os.path.exists(path):
+            try:
+                clr.AddReferenceToFileAndPath(path)
+                return path
+            except Exception as exc:
+                _raise_load_error(
+                    "ExcelExporterImporter.dll was found but could not be loaded.",
+                    revit_major,
+                    attempted_paths,
+                    resolved_path=path,
+                    inner_error=exc,
+                )
+
+    _raise_load_error(
+        "ExcelExporterImporter.dll was not found for Revit {0}.".format(revit_major),
+        revit_major,
+        attempted_paths,
     )
