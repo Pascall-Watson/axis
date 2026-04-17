@@ -28,9 +28,11 @@ def _revit_major_version():
 
 def _candidate_paths(revit_major):
     ext_root = _extension_root()
+    # Support all framework versions: net481 (2024), net8.0-windows (2025-2026), net10.0-windows (2027)
     return [
+        os.path.join(ext_root, "bin", "Revit{0}".format(revit_major), "net10.0-windows", "ExcelExporterImporter.dll"),
         os.path.join(ext_root, "bin", "Revit{0}".format(revit_major), "net8.0-windows", "ExcelExporterImporter.dll"),
-        os.path.join(ext_root, "bin", "Revit{0}".format(revit_major), "net48", "ExcelExporterImporter.dll"),
+        os.path.join(ext_root, "bin", "Revit{0}".format(revit_major), "net481", "ExcelExporterImporter.dll"),
         os.path.join(ext_root, "bin", "Revit{0}".format(revit_major), "ExcelExporterImporter.dll"),
         os.path.join(ext_root, "bin", "ExcelExporterImporter.dll"),
     ]

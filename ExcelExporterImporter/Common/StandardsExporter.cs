@@ -419,8 +419,8 @@ namespace ExcelExporterImporter.Common
 
                     worksheet.Cells[row, 1].Value = shared ? sharedParameterElement.GuidValue.ToString() : string.Empty;
                     worksheet.Cells[row, 2].Value = def.Name;
-                    worksheet.Cells[row, 3].Value = def.ParameterGroup;
-                    worksheet.Cells[row, 4].Value = def.ParameterType;
+                    worksheet.Cells[row, 3].Value = def.GetGroupTypeId();
+                    worksheet.Cells[row, 4].Value = RevitUtilities.GetDefinitionDataTypeId(def);
                     worksheet.Cells[row, 5].Value = insBinding != null;
                     worksheet.Cells[row, 6].Value = def.Visible;
                     worksheet.Cells[row, 7].Value = shared;
@@ -496,8 +496,8 @@ namespace ExcelExporterImporter.Common
                     var sItem = doc.GetElement(iItem.Id) as SharedParameterElement;
                     worksheet.Cells[row, 1].Value = sItem.GuidValue;
                     worksheet.Cells[row, 2].Value = sItem.Name;
-                    worksheet.Cells[row, 3].Value = iItem.ParameterGroup;
-                    worksheet.Cells[row, 4].Value = iItem.ParameterType.ToString();
+                    worksheet.Cells[row, 3].Value = iItem.GetGroupTypeId();
+                    worksheet.Cells[row, 4].Value = RevitUtilities.GetDefinitionDataTypeId(iItem);
                     worksheet.Cells[row, 5].Value = iItem.Visible;
                     row++;
                 }

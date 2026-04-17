@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System.ComponentModel;
+using System.Windows.Forms;
 using System.Windows.Input;
 
 namespace ExcelExporterImporter.Views
@@ -11,12 +12,16 @@ namespace ExcelExporterImporter.Views
             button.Click += (sender, args) => OnButtonClick();
         }
 
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string ButtonText
         {
             get => button.Text;
             set => button.Text = value;
         }
 
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ICommand Command { get; set; }
 
         private void OnButtonClick()
