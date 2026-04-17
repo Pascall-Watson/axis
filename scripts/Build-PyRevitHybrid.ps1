@@ -11,12 +11,12 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectDir = Join-Path $repoRoot "ExcelExporterImporter"
 $extensionBin = Join-Path $repoRoot "axis\ExcelExporterImporter.extension\bin"
 
-# Map versions to their target frameworks and configurations
+# Map versions to their target frameworks
 $versionInfo = @{
-    "2024" = @{ Framework = "net481"; TargetFramework = "net481" }
-    "2025" = @{ Framework = "net8.0"; TargetFramework = "net8.0-windows" }
-    "2026" = @{ Framework = "net8.0"; TargetFramework = "net8.0-windows" }
-    "2027" = @{ Framework = "net10.0"; TargetFramework = "net10.0-windows" }
+    "2024" = @{ Framework = "net481" }
+    "2025" = @{ Framework = "net8.0-windows" }
+    "2026" = @{ Framework = "net8.0-windows" }
+    "2027" = @{ Framework = "net10.0-windows" }
 }
 
 $failedVersions = @()
@@ -48,7 +48,7 @@ foreach ($version in $RevitVersions) {
         continue
     }
 
-    # Determine the output path based on target framework
+    # DLLs are placed in framework subdirectories by the SDK
     $framework = $versionInfo[$version].Framework
     $sourceDir = Join-Path $projectDir "bin\$Configuration\Revit$version\$framework"
     $targetDir = Join-Path $extensionBin "Revit$version"
@@ -64,7 +64,6 @@ foreach ($version in $RevitVersions) {
     Write-Host "Staged Revit $version binaries to $targetDir" -ForegroundColor Green
 }
 
-
 if ($skippedVersions.Count -gt 0) {
     Write-Warning "Skipped versions: $($skippedVersions -join ', ')"
 }
@@ -74,4 +73,3 @@ if ($failedVersions.Count -gt 0) {
 }
 
 Write-Host "Hybrid axis extension payload staged under: $extensionBin" -ForegroundColor Green
-

@@ -36,13 +36,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <OutputPath>bin\$(Configuration)\Revit$(RevitYear)\$(TargetFramework)\</OutputPath>
+    <OutputPath>bin\$(Configuration)\Revit$(RevitYear)\</OutputPath>
     <DefineConstants>TRACE;DEBUG;$(RevitSymbol)</DefineConstants>
     <DebugType>full</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\$(Configuration)\Revit$(RevitYear)\$(TargetFramework)\</OutputPath>
+    <OutputPath>bin\$(Configuration)\Revit$(RevitYear)\</OutputPath>
     <DefineConstants>TRACE;$(RevitSymbol)</DefineConstants>
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
