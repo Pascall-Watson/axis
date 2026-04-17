@@ -1,0 +1,175 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Height="760"
+        Width="960"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#1F2D3D" />
+        </Style>
+        <Style x:Key="ModeComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Width" Value="190" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="BorderBrush" Value="#B7C2CF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Margin" Value="0,0,0,0" />
+        </Style>
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}">
+            <TabItem Header="Export">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <GroupBox Grid.Row="0" Grid.Column="0" Header="Excel Export Location" Margin="0,0,0,8">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Height="30"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding ExportPath, Mode=TwoWay}"
+                                     ToolTip="Choose where the Excel file will be written." />
+                            <Button Grid.Column="1" Margin="8,0,0,0" Width="96" Height="30" VerticalAlignment="Center"
+                                    Content="Browse"
+                                    Command="{Binding BrowseExportPathCommand, Mode=OneWay}" />
+                            <ComboBox Grid.Column="2"
+                                      Style="{StaticResource ModeComboBoxStyle}"
+                                      Margin="8,0,0,0"
+                                      ItemsSource="{Binding ExportModes, Mode=OneWay}"
+                                      SelectedItem="{Binding SelectedExportMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Grid.Row="1" Grid.Column="0" Margin="0,0,0,8" Header="Revit Schedules">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <CheckBox Grid.Row="0"
+                                      Content="Select All"
+                                      IsChecked="{Binding CheckExportSchedulesAll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <ListBox Grid.Row="1" ItemsSource="{Binding ExportSchedules, Mode=OneWay}" Margin="0,8,0,0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Label, Mode=OneWay}"
+                                                  IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding IsEnabled, Mode=OneWay}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Import">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <GroupBox Grid.Row="0" Grid.Column="0" Header="Excel Import Location" Margin="0,0,0,8">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Height="30"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding WorkbookPath, Mode=TwoWay}"
+                                     ToolTip="Choose the workbook that was exported by this tool." />
+                            <Button Grid.Column="1" Margin="8,0,0,0" Width="96" Height="30" VerticalAlignment="Center"
+                                    Content="Browse"
+                                    Command="{Binding BrowseWorkbookPathCommand, Mode=OneWay}" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Grid.Row="1" Grid.Column="0" Margin="0,0,0,8" Header="Excel Worksheets">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <CheckBox Grid.Row="0"
+                                      Content="Select All"
+                                      IsChecked="{Binding CheckImportAll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <ListBox Grid.Row="1" ItemsSource="{Binding ImportItems, Mode=OneWay}" Margin="0,8,0,0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Label, Mode=OneWay}"
+                                                  IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding IsEnabled, Mode=OneWay}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="1" Margin="0,10,0,0" Padding="10,8" BorderBrush="#C5CDD8" BorderThickness="1" CornerRadius="4" Background="#F8FAFC">
+            <TextBlock Text="{Binding StatusMessage, Mode=OneWay}" Foreground="#1F2D3D" TextWrapping="Wrap" />
+        </Border>
+
+        <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="False">
+            <Button Content="{Binding RunButtonText, Mode=OneWay}"
+                    Style="{StaticResource ActionButtonStyle}"
+                    Command="{Binding RunCommand, Mode=OneWay}"
+                    IsDefault="True"
+                    DockPanel.Dock="Right" />
+            <Button Content="Close"
+                    Style="{StaticResource ActionButtonStyle}"
+                    Margin="0,0,24,0"
+                    Command="{Binding CancelCommand, Mode=OneWay}"
+                    IsCancel="True"
+                    DockPanel.Dock="Right" />
+        </DockPanel>
+    </Grid>
+</Window>

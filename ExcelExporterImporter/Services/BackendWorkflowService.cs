@@ -16,6 +16,13 @@ namespace ExcelExporterImporter.Services
 {
     public class DocumentInventoryService
     {
+        private static bool IsExportableSchedule(ViewSchedule schedule)
+        {
+            return schedule != null
+                   && !schedule.IsTemplate
+                   && !schedule.IsTitleblockRevisionSchedule;
+        }
+
         public IReadOnlyList<ScheduleInfo> GetExportableSchedules(Document document)
         {
             if (document == null) throw new ArgumentNullException("document");
@@ -23,7 +30,7 @@ namespace ExcelExporterImporter.Services
             var result = new List<ScheduleInfo>();
             foreach (ViewSchedule schedule in new FilteredElementCollector(document).OfClass(typeof(ViewSchedule)))
             {
-                if (schedule.IsTitleblockRevisionSchedule)
+                if (!IsExportableSchedule(schedule))
                     continue;
 
                 result.Add(new ScheduleInfo(
@@ -169,6 +176,9 @@ namespace ExcelExporterImporter.Services
             var result = new Dictionary<string, ViewSchedule>();
             foreach (ViewSchedule schedule in new FilteredElementCollector(document).OfClass(typeof(ViewSchedule)))
             {
+                if (!IsExportableSchedule(schedule))
+                    continue;
+
                 result[schedule.UniqueId] = schedule;
             }
 
