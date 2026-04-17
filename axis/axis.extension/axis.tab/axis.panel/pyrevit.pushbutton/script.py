@@ -22,6 +22,40 @@ from support_logging import OperationLogger
 from support_logging import get_python_log_path
 
 
+def _prepare_output_path(output_path, operation_logger, cancel_event_name):
+    if not os.path.exists(output_path):
+        return True
+
+    overwrite_ok = forms.alert(
+        "The selected file already exists. Overwrite it?",
+        yes=True,
+        no=True,
+        title="Confirm Overwrite",
+    )
+    if not overwrite_ok:
+        operation_logger.info(cancel_event_name, reason="Overwrite declined", outputPath=output_path)
+        return False
+
+    try:
+        os.remove(output_path)
+    except Exception as exc:
+        operation_logger.exception(
+            "output-overwrite-delete-failed",
+            exc,
+            outputPath=output_path,
+            operation=cancel_event_name,
+        )
+        show_error(
+            "Could not overwrite the selected file. Close it in Excel (if open) and try again.",
+            details=str(exc),
+            python_log_path=get_python_log_path(),
+            backend_log_path=operation_logger.backend_log_path,
+        )
+        return False
+
+    return True
+
+
 def _select_many(items, title, button_name):
     labels = [item[0] for item in items]
     selected = forms.SelectFromList.show(
@@ -136,16 +170,8 @@ def _run_export_schedules(doc, interop, export_schedules_request_type, progress_
         operation_logger.info("schedule-export-cancelled-before-run", reason="No output path selected")
         return
 
-    if os.path.exists(output_path):
-        overwrite_ok = forms.alert(
-            "The selected file already exists. Overwrite it?",
-            yes=True,
-            no=True,
-            title="Confirm Overwrite",
-        )
-        if not overwrite_ok:
-            operation_logger.info("schedule-export-cancelled-before-run", reason="Overwrite declined", outputPath=output_path)
-            return
+    if not _prepare_output_path(output_path, operation_logger, "schedule-export-cancelled-before-run"):
+        return
 
     request = export_schedules_request_type()
     request.OutputFilePath = output_path
@@ -197,16 +223,8 @@ def _run_export_standards(doc, interop, export_standards_request_type, progress_
         operation_logger.info("standards-export-cancelled-before-run", reason="No output path selected")
         return
 
-    if os.path.exists(output_path):
-        overwrite_ok = forms.alert(
-            "The selected file already exists. Overwrite it?",
-            yes=True,
-            no=True,
-            title="Confirm Overwrite",
-        )
-        if not overwrite_ok:
-            operation_logger.info("standards-export-cancelled-before-run", reason="Overwrite declined", outputPath=output_path)
-            return
+    if not _prepare_output_path(output_path, operation_logger, "standards-export-cancelled-before-run"):
+        return
 
     request = export_standards_request_type()
     request.OutputFilePath = output_path

@@ -9,7 +9,7 @@ This guide covers staged rollout and support of the hybrid pyRevit plus C# deplo
 Use a conservative rollout sequence.
 
 1. Build and stage the extension with `./scripts/Build-PyRevitHybrid.ps1 -Configuration Release`.
-2. Confirm the staged payloads exist under `axis/ExcelExporterImporter.extension/bin/Revit2025` and `axis/ExcelExporterImporter.extension/bin/Revit2026`.
+2. Confirm the staged payloads exist under `axis/axis.extension/bin/Revit2025` and `axis/axis.extension/bin/Revit2026`.
 3. Pick a small pilot group with known-good test models and one support contact who can collect logs.
 4. Keep the legacy WPF button visible and communicate that it is the immediate fallback if the Python workflow blocks a task.
 5. Require the pilot group to report the operation ID shown in the result dialog for any failure or unexpected skip.
@@ -19,14 +19,14 @@ Use a conservative rollout sequence.
 Rollback is file-based and does not require code changes.
 
 1. Close Revit.
-2. Restore the last known-good staged payload under `axis/ExcelExporterImporter.extension/bin/Revit2025` or `axis/ExcelExporterImporter.extension/bin/Revit2026`.
+2. Restore the last known-good staged payload under `axis/axis.extension/bin/Revit2025` or `axis/axis.extension/bin/Revit2026`.
 3. Reload pyRevit.
 4. If the Python workflow still appears unstable, direct users to `Excel Exporter Importer (Legacy WPF)` until the pilot issue is resolved.
 5. Keep the failed payload available for investigation until the support logs have been collected.
 
 ## Log collection
 
-Collect both log files from `%LOCALAPPDATA%\Axis\ExcelExporterImporter\Logs`.
+Collect both log files from `%LOCALAPPDATA%\Axis\Logs`.
 
 1. `python-ui.log`
 2. `backend.log`

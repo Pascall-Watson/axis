@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using ExcelExporterImporter.ViewModels;
 using ExcelExporterImporter.Views;
 
@@ -41,6 +42,9 @@ namespace BIMOneAddinManager.Views
             DataContext = vm;
             progressViewModel = vm;
             InitializeComponent();
+
+            var assemblyName = GetType().Assembly.GetName().Name;
+            Icon = BitmapFrame.Create(new Uri(string.Format("pack://application:,,,/{0};component/Resources/iconapp.ico", assemblyName), UriKind.Absolute));
 
             userControl = new ButtonUserControl();
             userControl.Command = vm.Command;

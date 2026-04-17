@@ -9,7 +9,7 @@ import uuid
 
 def _log_root():
     base_path = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    return os.path.join(base_path, "Axis", "ExcelExporterImporter", "Logs")
+    return os.path.join(base_path, "Axis", "Logs")
 
 
 def ensure_log_directory():

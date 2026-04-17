@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectDir = Join-Path $repoRoot "ExcelExporterImporter"
-$extensionBin = Join-Path $repoRoot "axis\ExcelExporterImporter.extension\bin"
+$extensionBin = Join-Path $repoRoot "axis\axis.extension\bin"
 
 # Map versions to their target frameworks
 $versionInfo = @{

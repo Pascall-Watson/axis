@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using Autodesk.Revit.DB;
 using ExcelExporterImporter.ViewModels;
 
@@ -24,11 +25,15 @@ namespace ExcelExporterImporter.Views
             if (lang.ToString().Contains("French"))
             {
                 var cultureInfo = new CultureInfo("fr-FR");
-                Thread.CurrentThread.CurrentCulture = Thread.CurrentThread.CurrentUICulture = cultureInfo;
+                // Keep CurrentCulture invariant for XAML type conversion, and only localize UI resources.
+                Thread.CurrentThread.CurrentUICulture = cultureInfo;
             }
 
             //====================================================================================================================================================
             InitializeComponent();
+
+            var assemblyName = GetType().Assembly.GetName().Name;
+            Icon = BitmapFrame.Create(new Uri(string.Format("pack://application:,,,/{0};component/Resources/iconapp.ico", assemblyName), UriKind.Absolute));
 
             var mainViewModel = new MainViewModel(this, doc);
             // this creates an instance of the ViewModel

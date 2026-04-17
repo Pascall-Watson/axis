@@ -39,16 +39,39 @@ namespace ExcelExporterImporter.Interop
                     { "ownerHandle", ownerHandle.ToString() },
                 });
 
-            var dialog = new MainWindow(document);
-            var helper = new WindowInteropHelper(dialog);
-
-            if (ownerHandle != IntPtr.Zero)
+            try
             {
-                helper.Owner = ownerHandle;
-            }
+                var dialog = new MainWindow(document);
+                var helper = new WindowInteropHelper(dialog);
 
-            dialog.ShowDialog();
-            return true;
+                if (ownerHandle != IntPtr.Zero)
+                {
+                    helper.Owner = ownerHandle;
+                }
+
+                dialog.ShowDialog();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                var innerMessage = exception.InnerException != null ? exception.InnerException.Message : null;
+                SupportLog.Error(
+                    "legacy-window-launch-failed",
+                    exception,
+                    new Dictionary<string, object>
+                    {
+                        { "document", document.Title },
+                        { "ownerHandle", ownerHandle.ToString() },
+                        { "exceptionType", exception.GetType().FullName },
+                        { "innerMessage", innerMessage },
+                    });
+
+                var detailMessage = innerMessage != null
+                    ? string.Format("{0} | Inner: {1}", exception.Message, innerMessage)
+                    : exception.Message;
+
+                throw new InvalidOperationException(detailMessage, exception);
+            }
         }
 
         public static string GetBackendLogFilePath()

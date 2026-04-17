@@ -93,7 +93,7 @@ Now I'll generate the comprehensive implementation plan based on all the researc
 
 13. **Run full build script**:
     - Execute: `.\Build-PyRevitHybrid.ps1 -RevitVersions 2024,2025,2026,2027`
-    - Outputs should land in `axis/ExcelExporterImporter.extension/bin/Revit20XX/net8.0-windows/`
+    - Outputs should land in `axis/axis.extension/bin/Revit20XX/net8.0-windows/`
 
 ---
 
@@ -140,7 +140,7 @@ Now I'll generate the comprehensive implementation plan based on all the researc
 1. **Question**: Are there Revit 2024 API breaking changes between ElementId.IntegerValue (2024 still uses it?) and `.Value` (2024+)?
    - **Recommendation**: Add `#if !REVIT2024 ... #else ...` wrapper for ElementId usage to handle both int and long safely. Verify 2024 API docs confirm `.Value` property exists in 2024.
 
-2. **Question**: Is the pyRevit hybrid extension manifest ([**extension.json**](axis/ExcelExporterImporter.extension/extension.json)) set up to load version-specific assemblies from `bin/Revit20XX/` folders?
+2. **Question**: Is the pyRevit hybrid extension manifest ([**extension.json**](axis/axis.extension/extension.json)) set up to load version-specific assemblies from `bin/Revit20XX/` folders?
    - **Recommendation**: Review extension.json loader path to ensure it references `bin/Revit%RevitVersion%/` or similar dynamic path. If not, may need to create version-specific symlinks or use runtime version detection.
 
 3. **Question**: Are all dependencies (EPPlus, log4net, Microsoft.Extensions, Ookii.Dialogs) compatible with .NET Framework 4.8.1, .NET 8.0, and .NET 10?

@@ -312,7 +312,9 @@ namespace ExcelExporterImporter.Services
 
             using (var package = new ExcelPackage(new FileInfo(request.OutputFilePath)))
             {
-                var worksheetNames = new Hashtable();
+                var worksheetNames = new HashSet<string>(
+                    package.Workbook.Worksheets.Select(worksheet => worksheet.Name),
+                    StringComparer.OrdinalIgnoreCase);
                 var scheduleExporter = new ScheduleExporter(cancellationToken);
 
                 foreach (var uniqueId in request.ScheduleUniqueIds)
@@ -329,7 +331,7 @@ namespace ExcelExporterImporter.Services
 
                     var schedule = schedulesInModel[uniqueId];
                     var worksheetName = SanitizeWorksheetName(schedule.Name, worksheetNames);
-                    worksheetNames[worksheetName] = true;
+                    worksheetNames.Add(worksheetName);
 
                     Increment(progress, 5);
                     SetStatus(progress, string.Format(Resources.ExportProgressExporting, schedule.Name));
@@ -344,7 +346,9 @@ namespace ExcelExporterImporter.Services
 
                         if (!request.UseBasicMode && addLegendPerSchedule)
                         {
-                            var legendWorksheet = package.Workbook.Worksheets.Add(Resources.clLegend);
+                            var legendName = SanitizeWorksheetName(Resources.clLegend, worksheetNames);
+                            worksheetNames.Add(legendName);
+                            var legendWorksheet = package.Workbook.Worksheets.Add(legendName);
                             ColorLegend.Add(legendWorksheet);
                         }
 
@@ -369,7 +373,9 @@ namespace ExcelExporterImporter.Services
 
                 if (!request.UseBasicMode && !addLegendPerSchedule && !cancellationToken.IsCancellationRequested)
                 {
-                    var legendWorksheet = package.Workbook.Worksheets.Add(Resources.clLegend);
+                    var legendName = SanitizeWorksheetName(Resources.clLegend, worksheetNames);
+                    worksheetNames.Add(legendName);
+                    var legendWorksheet = package.Workbook.Worksheets.Add(legendName);
                     ColorLegend.Add(legendWorksheet);
                 }
 
@@ -636,13 +642,14 @@ namespace ExcelExporterImporter.Services
             progress.SetStatus(status);
         }
 
-        private static string SanitizeWorksheetName(string rawName, Hashtable usedNames)
+        private static string SanitizeWorksheetName(string rawName, ISet<string> usedNames)
         {
-            var name = Regex.Replace(rawName, ":|\\?|/|\\\\|\\[|\\]|\\*", " ");
+            var safeRawName = string.IsNullOrWhiteSpace(rawName) ? "Sheet" : rawName.Trim();
+            var name = Regex.Replace(safeRawName, ":|\\?|/|\\\\|\\[|\\]|\\*", " ");
             name = name.Length > 31 ? name.Substring(0, 28) + "001" : name;
 
             var suffixNumber = 2;
-            while (usedNames[name] != null)
+            while (usedNames.Contains(name))
             {
                 var suffix = suffixNumber++.ToString().PadLeft(3, '0');
                 name = name.Substring(0, Math.Min(name.Length, 28)) + suffix;

@@ -110,7 +110,8 @@ namespace ExcelExporterImporter.Common
             }
 
             return typeLabel.Equals("Text", StringComparison.OrdinalIgnoreCase)
-                   || typeLabel.IndexOf("string.text", StringComparison.OrdinalIgnoreCase) >= 0;
+                   || typeLabel.IndexOf("string.text", StringComparison.OrdinalIgnoreCase) >= 0
+                   || typeLabel.IndexOf("spec.string", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public static bool IsYesNoParameter(Definition definition)
@@ -122,7 +123,8 @@ namespace ExcelExporterImporter.Common
             }
 
             return typeLabel.Equals("YesNo", StringComparison.OrdinalIgnoreCase)
-                   || typeLabel.IndexOf("boolean.yesno", StringComparison.OrdinalIgnoreCase) >= 0;
+                   || typeLabel.IndexOf("boolean.yesno", StringComparison.OrdinalIgnoreCase) >= 0
+                   || typeLabel.IndexOf("spec.bool", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public static string GetParameterTypeLabel(Definition definition)
@@ -133,14 +135,23 @@ namespace ExcelExporterImporter.Common
                 return string.Empty;
             }
 
-            if (typeLabel.IndexOf("yesno", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (typeLabel.IndexOf("yesno", StringComparison.OrdinalIgnoreCase) >= 0
+                || typeLabel.IndexOf("spec.bool", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "YesNo";
             }
 
-            if (typeLabel.IndexOf("string.text", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (typeLabel.IndexOf("string.text", StringComparison.OrdinalIgnoreCase) >= 0
+                || typeLabel.IndexOf("spec.string", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "Text";
+            }
+
+            // Any remaining unrecognised Forge type ID (e.g. autodesk.spec.aec:length-2.0.1):
+            // return empty so callers fall back to StorageType.
+            if (typeLabel.IndexOf("autodesk.spec", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return string.Empty;
             }
 
             return typeLabel;

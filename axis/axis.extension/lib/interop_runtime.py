@@ -48,7 +48,7 @@ def show_error(
             "",
             "Next steps:",
             "1. Run .\\scripts\\Build-PyRevitHybrid.ps1 -Configuration Release from the repo root.",
-            "2. Confirm the matching Revit20xx folder under axis\\ExcelExporterImporter.extension\\bin contains ExcelExporterImporter.dll.",
+            "2. Confirm the matching Revit20xx folder under axis\\axis.extension\\bin contains ExcelExporterImporter.dll.",
             "3. Reload pyRevit and try again.",
         ]
     )
