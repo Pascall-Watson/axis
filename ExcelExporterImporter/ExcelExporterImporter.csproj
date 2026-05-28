@@ -47,7 +47,7 @@
     <PackageReference Include="Revit.RevitApi.x64" Version="2021.0.0" />
     <PackageReference Include="Revit.RevitApiUI.x64" Version="2021.0.0" />
     <PackageReference Include="RevitApi2021" Version="21.0.0.383" />
-    <PackageReference Include="log4net" Version="2.0.3" />
+    <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Ookii.Dialogs" Version="1.0" />
   </ItemGroup>
   <ItemGroup>
