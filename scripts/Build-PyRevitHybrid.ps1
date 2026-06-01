@@ -2,7 +2,7 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
     [string[]]$RevitVersions = @("2024", "2025", "2026", "2027"),
-    [string]$RevitInstallRootBase = "$env:ProgramW6432\Autodesk"
+    [string]$DependenciesRootBase = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectDir = Join-Path $repoRoot "ExcelExporterImporter"
 $extensionBin = Join-Path $repoRoot "axis\axis.extension\bin"
+
+if ([string]::IsNullOrWhiteSpace($DependenciesRootBase)) {
+    $DependenciesRootBase = Join-Path $repoRoot "dependencies"
+}
 
 # Map versions to their target frameworks
 $versionInfo = @{
@@ -33,15 +37,17 @@ foreach ($version in $RevitVersions) {
         continue
     }
 
-    $revitInstallRoot = Join-Path $RevitInstallRootBase "Revit $version"
-    if (!(Test-Path (Join-Path $revitInstallRoot "RevitAPI.dll"))) {
-        Write-Warning "Skipping Revit $version. RevitAPI.dll not found at $revitInstallRoot"
+    $revitDependenciesRoot = Join-Path $DependenciesRootBase $version
+    $requiredDlls = @("RevitAPI.dll", "RevitAPIUI.dll", "AdWindows.dll")
+    $missingDlls = @($requiredDlls | Where-Object { !(Test-Path (Join-Path $revitDependenciesRoot $_)) })
+    if ($missingDlls.Count -gt 0) {
+        Write-Warning "Skipping Revit $version. Missing dependencies in ${revitDependenciesRoot}: $($missingDlls -join ', ')"
         $skippedVersions += $version
         continue
     }
 
     # Build version-specific project
-    dotnet build $versionProjectPath -c $Configuration -p:RevitInstallRoot="$revitInstallRoot" -p:DeployToRevitAddins=false
+    dotnet build $versionProjectPath -c $Configuration -p:RevitDependenciesRoot="$revitDependenciesRoot"
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Build failed for Revit $version"
         $failedVersions += $version

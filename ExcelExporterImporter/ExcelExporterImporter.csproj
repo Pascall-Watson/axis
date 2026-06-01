@@ -9,8 +9,6 @@
     <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
     <RevitSymbol>REVIT$(RevitVersion)</RevitSymbol>
     <SupportedRevitVersions>2025;2026</SupportedRevitVersions>
-    <DeployToRevitAddins>false</DeployToRevitAddins>
-    <RevitAddinsPath>%25appdata%25\Autodesk\Revit\Addins\$(RevitVersion)</RevitAddinsPath>
     <UseRevitNuGet Condition="'$(UseRevitNuGet)' == ''">false</UseRevitNuGet>
     <RevitInstallRoot Condition="'$(RevitInstallRoot)' == ''">$(ProgramW6432)\Autodesk\Revit $(RevitVersion)</RevitInstallRoot>
     <DebugEngines>
@@ -54,11 +52,7 @@
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="4.5.3.2" />
     <PackageReference Include="EPPlusEnumerable" Version="1.1.0.0" />
-    <PackageReference Include="Revit.AdWindows.x64" Version="2021.0.0" />
-    <PackageReference Include="Revit.RevitApi.x64" Version="2021.0.0" />
-    <PackageReference Include="Revit.RevitApiUI.x64" Version="2021.0.0" />
-    <PackageReference Include="RevitApi2021" Version="21.0.0.383" />
-    <PackageReference Include="log4net" Version="2.0.3" />
+    <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Ookii.Dialogs" Version="1.0" />
     <!-- Explicit versions to resolve Microsoft.Extensions conflicts from log4net -->
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
@@ -85,7 +79,6 @@
   <ItemGroup>
     <Compile Remove="Button.cs" />
     <Compile Remove="Command.cs" />
-    <Content Remove="Addin.addin" />
   </ItemGroup>
 
   <ItemGroup>
@@ -247,11 +240,4 @@
       Condition="'$(UseRevitNuGet)' != 'true' and !Exists('$(RevitInstallRoot)\\RevitAPI.dll')"
       Text="Revit API binaries were not found. Set RevitInstallRoot (current: '$(RevitInstallRoot)') to a valid Revit $(RevitVersion) install folder containing RevitAPI.dll." />
   </Target>
-
-  <PropertyGroup Condition="'$(DeployToRevitAddins)' == 'true'">
-    <PostBuildEvent>
-      copy "$(MSBuildProjectDirectory)\addin.addin" "$(RevitAddinsPath)\$(MSBuildProjectName).addin"
-      xcopy "$(MSBuildProjectDirectory)\$(OutputPath)*" "$(RevitAddinsPath)\ExcelExporterImporter\" /S /E /R /I /F /Y
-    </PostBuildEvent>
-  </PropertyGroup>
 </Project>

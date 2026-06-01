@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Windows.Interop;
@@ -16,7 +17,7 @@ namespace ExcelExporterImporter.Interop
         private static readonly BackendWorkflowService WorkflowService = new BackendWorkflowService();
 
         // ─────────────────────────────────────────────────────────────────────
-        // Legacy WPF launcher – preserved exactly as before.
+        // Legacy WPF launcher for internal diagnostics and compatibility paths.
         // ─────────────────────────────────────────────────────────────────────
 
         public static bool ShowMainWindow(Document document)
@@ -29,24 +30,30 @@ namespace ExcelExporterImporter.Interop
             if (document == null)
                 return false;
 
+            var originalCulture = Thread.CurrentThread.CurrentCulture;
+            var originalUICulture = Thread.CurrentThread.CurrentUICulture;
+            var resolvedOwnerHandle = ResolveOwnerHandle(ownerHandle);
+
             SupportLog.EnsureConfigured();
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             SupportLog.Info(
                 "legacy-window-launch",
                 new Dictionary<string, object>
                 {
                     { "document", document.Title },
-                    { "ownerHandle", ownerHandle.ToString() },
+                    { "requestedOwnerHandle", ownerHandle.ToString() },
+                    { "ownerHandle", resolvedOwnerHandle.ToString() },
                 });
 
             try
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
                 var dialog = new MainWindow(document);
                 var helper = new WindowInteropHelper(dialog);
 
-                if (ownerHandle != IntPtr.Zero)
+                if (resolvedOwnerHandle != IntPtr.Zero)
                 {
-                    helper.Owner = ownerHandle;
+                    helper.Owner = resolvedOwnerHandle;
                 }
 
                 dialog.ShowDialog();
@@ -61,7 +68,8 @@ namespace ExcelExporterImporter.Interop
                     new Dictionary<string, object>
                     {
                         { "document", document.Title },
-                        { "ownerHandle", ownerHandle.ToString() },
+                        { "requestedOwnerHandle", ownerHandle.ToString() },
+                        { "ownerHandle", resolvedOwnerHandle.ToString() },
                         { "exceptionType", exception.GetType().FullName },
                         { "innerMessage", innerMessage },
                     });
@@ -71,6 +79,26 @@ namespace ExcelExporterImporter.Interop
                     : exception.Message;
 
                 throw new InvalidOperationException(detailMessage, exception);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCulture;
+                Thread.CurrentThread.CurrentUICulture = originalUICulture;
+            }
+        }
+
+        private static IntPtr ResolveOwnerHandle(IntPtr ownerHandle)
+        {
+            if (ownerHandle != IntPtr.Zero)
+                return ownerHandle;
+
+            try
+            {
+                return Process.GetCurrentProcess().MainWindowHandle;
+            }
+            catch
+            {
+                return IntPtr.Zero;
             }
         }
 

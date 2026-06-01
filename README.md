@@ -1,37 +1,32 @@
 # Axis
 
-## pyRevit Hybrid (Revit 2025-2026)
+## pyRevit Hybrid (Revit 2024-2026)
 
 This repository now includes a hybrid migration scaffold under `axis/`:
 
 - pyRevit extension wrapper: `axis/axis.extension`
 - Python runtime loader: `axis/axis.extension/lib/loader.py`
 - pyRevit command button: `axis/axis.extension/axis.tab/axis.panel/pyrevit.pushbutton/script.py`
-- C# fallback button: `axis/axis.extension/axis.tab/axis.panel/csharp.pushbutton/script.py`
 - Build/staging script: `scripts/Build-PyRevitHybrid.ps1`
 
-The C# project now accepts a `RevitVersion` build property (`2025`, `2026`) and publishes version-specific outputs.
+The C# backend ships as version-specific projects (`2024`, `2025`, `2026`, `2027`) and publishes versioned outputs for pyRevit staging.
 
-Sprint 4 introduces a Python-owned pyRevit workflow for export/import using the C# interop backend service API. The default button no longer calls `ShowMainWindow(...)`.
+Sprint 4 introduces a Python-owned pyRevit workflow for export/import using the C# interop backend service API.
 
-The original WPF path is still available as a separate fallback button:
+The extension now ships a single pyRevit command:
 
 - `Excel Exporter Importer` -> Python workflow (export schedules, export standards, import workbook)
-- `Excel Exporter Importer (Legacy WPF)` -> opens the original C# WPF window
-
-This keeps migration risk low while allowing side-by-side validation.
 
 ## Sprint 5: Deployment hardening
 
-Sprint 5 keeps the Python workflow and the legacy WPF fallback side by side, but adds supportability for office rollout:
+Sprint 5 keeps the Python workflow as the extension entrypoint and adds supportability for office rollout:
 
 - Structured support logs for the pyRevit UI and the C# backend under `%LOCALAPPDATA%\Axis\Logs`.
 - Operation IDs surfaced in Python result dialogs for faster support triage.
 - Clearer summaries for export/import outcomes, including warnings, skips, and log file locations.
-- Conservative backend hardening that does not remove the legacy WPF fallback.
 - A log4net upgrade from `2.0.3` to `3.3.0` to address the previously flagged vulnerabilities.
 
-The Python workflow writes `python-ui.log`. The C# add-in writes `backend.log`. Both use a simple structured `key="value"` format so support staff can search by `operationId`, `event`, `document`, or file path.
+The Python workflow writes `python-ui.log`. The C# backend writes `backend.log`. Both use a simple structured `key="value"` format so support staff can search by `operationId`, `event`, `document`, or file path.
 
 See `docs/OPERATIONS.md` for pilot rollout, rollback, troubleshooting, log collection, and regression checks.
 
@@ -93,7 +88,7 @@ OperationResult ExecuteImport(
 ```
 
 The existing `ShowMainWindow(document)` / `ShowMainWindow(document, ownerHandle)` methods
-are **unchanged**. The WPF launcher continues to work exactly as before.
+remain available for internal diagnostics and compatibility paths, but no dedicated pyRevit button is shipped for direct WPF launch.
 
 ### Calling the backend from Python (example)
 
@@ -144,18 +139,18 @@ in `ImportWorkbookInspection.ReadOnlyItems` when found in a workbook.
 ./scripts/Build-PyRevitHybrid.ps1 -Configuration Release
 ```
 
-If your Revit installs are not under `%ProgramW6432%\Autodesk`:
+If your dependency binaries are in a custom location:
 
 ```powershell
-./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitInstallRootBase "D:\Autodesk"
+./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -DependenciesRootBase "D:\RevitDependencies"
 ```
 
 What the staging script does:
 
-1. Builds `ExcelExporterImporter.csproj` once per requested Revit version.
-2. Uses the local Revit install folder for API references.
-3. Does not deploy a `.addin` into `%AppData%\Autodesk\Revit\Addins`.
-4. Copies the build output into `axis/axis.extension/bin/Revit2025` and `axis/axis.extension/bin/Revit2026`.
+1. Builds the version-specific project (`ExcelExporterImporter.<version>.csproj`) for each requested Revit version.
+2. Uses API dependency binaries from the repo `dependencies/<version>` folder.
+3. Does not generate or deploy `.addin` manifests.
+4. Copies the build output into `axis/axis.extension/bin/Revit20xx`.
 
 To stage only one supported Revit version:
 
@@ -166,7 +161,7 @@ To stage only one supported Revit version:
 
 ### Production-safe baseline workflow
 
-Use this sequence when validating the hybrid launcher without changing the current WPF workflow.
+Use this sequence when validating the pyRevit-only launcher.
 
 1. From the repo root, back up the current staged payloads if you already have validated binaries under `axis/axis.extension/bin/Revit2025` or `axis/axis.extension/bin/Revit2026`.
 2. Run the staging script from PowerShell.
@@ -177,7 +172,7 @@ Use this sequence when validating the hybrid launcher without changing the curre
 5. Reload pyRevit.
 6. Open Revit 2025 or Revit 2026 and run `Excel Tools > Excel Exporter > Excel Exporter Importer`.
 7. Confirm the Python workflow opens and you can choose Export Schedules, Export Standards, or Import Workbook.
-8. Confirm `Excel Tools > Excel Exporter > Excel Exporter Importer (Legacy WPF)` still opens the original C# WPF window.
+8. Confirm there is no legacy WPF fallback button exposed in the extension UI.
 
 ### Rollback
 
@@ -216,22 +211,18 @@ Run these tests in both Revit 2025 and Revit 2026.
    - In the Python workflow, choose `Import Workbook` and import the updated sheet.
    - Confirm the updated value appears in Revit.
 
-5. Legacy fallback smoke test
-   - Click `Excel Exporter Importer (Legacy WPF)`.
-   - Confirm the original C# WPF window still opens.
-
-6. Failure-path smoke test
+5. Failure-path smoke test
    - If the launcher fails, confirm the pyRevit alert reports the DLL path it loaded or the paths it searched, then follow the suggested rebuild and reload steps.
 
 ### Sprint 5 regression checks
 
 Run these checks before widening rollout beyond a pilot group:
 
-1. Confirm `Excel Exporter Importer` still opens the Python chooser and `Excel Exporter Importer (Legacy WPF)` still opens the original WPF dialog.
+1. Confirm `Excel Exporter Importer` still opens the Python chooser.
 2. Run one successful schedule export, one successful standards export, and one successful import. Confirm the result dialog includes a status, requested/succeeded/failed counts, and log file locations.
 3. Force one known failure path, such as selecting a locked workbook for import or temporarily removing the staged DLL. Confirm the alert includes next steps and the support log paths.
 4. Check `%LOCALAPPDATA%\Axis\Logs\python-ui.log` and `%LOCALAPPDATA%\Axis\Logs\backend.log` for a matching `operationId` on the failed or successful workflow.
-5. Keep the legacy WPF button enabled during pilot rollout. Use it as the rollback path if the Python workflow blocks a team member.
+5. Validate rollback by restoring a previously known-good staged payload and reloading pyRevit.
 
 ## Description
 

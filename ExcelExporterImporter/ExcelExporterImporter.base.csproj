@@ -5,7 +5,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <DeployToRevitAddins>false</DeployToRevitAddins>
     <RevitSymbol>REVIT$(RevitYear)</RevitSymbol>
     <DebugEngines>
       {351668CC-8477-4fbf-BFE3-5F1006E4DB1F}
@@ -25,8 +24,8 @@
     <StartupObject />
     <ApplicationIcon>ImportExportExcel-Icon.ico</ApplicationIcon>
     <RootNamespace>ExcelExporterImporter</RootNamespace>
+    <!-- pyRevit-only deployment: no direct .addin manifest deployment from this project. -->
     <RevitDependenciesRoot>$(MSBuildProjectDirectory)\..\dependencies\$(RevitYear)</RevitDependenciesRoot>
-    <RevitAddinsPath>%25appdata%25\Autodesk\Revit\Addins\$(RevitYear)</RevitAddinsPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -85,7 +84,6 @@
     <EmbeddedResource Remove="obj\**\*" />
     <None Remove="obj\**\*" />
     <Page Remove="obj\**\*" />
-    <Content Remove="Addin.addin" />
   </ItemGroup>
 
   <ItemGroup>
@@ -243,11 +241,4 @@
       Condition="!Exists('$(RevitDependenciesRoot)\\RevitAPI.dll')"
       Text="Revit API binaries were not found in '$(RevitDependenciesRoot)'. Expected at least RevitAPI.dll." />
   </Target>
-
-  <PropertyGroup Condition="'$(DeployToRevitAddins)' == 'true'">
-    <PostBuildEvent>
-      copy "$(MSBuildProjectDirectory)\addin.addin" "$(RevitAddinsPath)\$(MSBuildProjectName).addin"
-      xcopy "$(MSBuildProjectDirectory)\$(OutputPath)*" "$(RevitAddinsPath)\ExcelExporterImporter\" /S /E /R /I /F /Y
-    </PostBuildEvent>
-  </PropertyGroup>
 </Project>

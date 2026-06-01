@@ -8,7 +8,6 @@ using Autodesk.Revit.UI;
 using ExcelExporterImporter.Interop;
 using ExcelExporterImporter.Support;
 using log4net;
-using IWin32Window = System.Windows.Forms.IWin32Window;
 
 namespace ExcelExporterImporter
 {
@@ -23,14 +22,17 @@ namespace ExcelExporterImporter
             ElementSet elements)
         {
             SupportLog.EnsureConfigured();
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
-            var uiapp = commandData.Application;
-            var uidoc = uiapp.ActiveUIDocument;
-            var doc = uidoc.Document;
+            var originalCulture = Thread.CurrentThread.CurrentCulture;
+            var originalUICulture = Thread.CurrentThread.CurrentUICulture;
 
             try
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
+                var uiapp = commandData.Application;
+                var uidoc = uiapp.ActiveUIDocument;
+                var doc = uidoc.Document;
+
                 if (doc == null)
                     return Result.Cancelled;
 
@@ -42,7 +44,7 @@ namespace ExcelExporterImporter
                         { "logFilePath", SupportLog.LogFilePath },
                     });
 
-                ExcelExporterImporterInterop.ShowMainWindow(doc);
+                ExcelExporterImporterInterop.ShowMainWindow(doc, uiapp.MainWindowHandle);
 
                 return Result.Succeeded;
             }
@@ -58,21 +60,11 @@ namespace ExcelExporterImporter
                 Logger.Error(e.Message, e);
                 return Result.Failed;
             }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCulture;
+                Thread.CurrentThread.CurrentUICulture = originalUICulture;
+            }
         }
-    }
-
-    internal class WindowWrapper : IWin32Window, IDisposable
-    {
-        public WindowWrapper(IntPtr handle)
-        {
-            Handle = handle;
-        }
-
-        public void Dispose()
-        {
-            Handle = IntPtr.Zero;
-        }
-
-        public IntPtr Handle { get; private set; }
     }
 }

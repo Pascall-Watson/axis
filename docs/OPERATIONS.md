@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide covers staged rollout and support of the hybrid pyRevit plus C# deployment introduced in Sprint 5. It assumes the legacy WPF fallback remains available during pilot and early office rollout.
+This guide covers staged rollout and support of the pyRevit extension deployment introduced in Sprint 5. The extension entrypoint is the Python workflow.
 
 ## Pilot rollout
 
@@ -11,7 +11,7 @@ Use a conservative rollout sequence.
 1. Build and stage the extension with `./scripts/Build-PyRevitHybrid.ps1 -Configuration Release`.
 2. Confirm the staged payloads exist under `axis/axis.extension/bin/Revit2025` and `axis/axis.extension/bin/Revit2026`.
 3. Pick a small pilot group with known-good test models and one support contact who can collect logs.
-4. Keep the legacy WPF button visible and communicate that it is the immediate fallback if the Python workflow blocks a task.
+4. Communicate rollback steps (restore staged payload + reload pyRevit) before pilot starts.
 5. Require the pilot group to report the operation ID shown in the result dialog for any failure or unexpected skip.
 
 ## Rollback
@@ -21,7 +21,7 @@ Rollback is file-based and does not require code changes.
 1. Close Revit.
 2. Restore the last known-good staged payload under `axis/axis.extension/bin/Revit2025` or `axis/axis.extension/bin/Revit2026`.
 3. Reload pyRevit.
-4. If the Python workflow still appears unstable, direct users to `Excel Exporter Importer (Legacy WPF)` until the pilot issue is resolved.
+4. If the Python workflow still appears unstable, keep the rolled-back staged payload active until investigation is complete.
 5. Keep the failed payload available for investigation until the support logs have been collected.
 
 ## Log collection
@@ -34,7 +34,7 @@ Collect both log files from `%LOCALAPPDATA%\Axis\Logs`.
 Ask the user for:
 
 1. Revit version.
-2. Whether they used the Python workflow or the legacy WPF fallback.
+2. Which Python workflow operation they ran (export schedules, export standards, or import workbook).
 3. The operation ID shown in the result dialog or error alert.
 4. The workbook path or export target path involved.
 
@@ -60,7 +60,7 @@ The log format is `key="value"`. Search for `operationId="..."` first, then revi
 1. Review the result dialog counts first.
 2. Search both logs for the operation ID.
 3. Check whether the skipped items were missing from the workbook, read-only by design, or absent from the active Revit model.
-4. If production work is blocked, rerun using the legacy WPF fallback while investigating.
+4. If production work is blocked, restore the previous staged payload and reload pyRevit while investigating.
 
 ## Regression checks
 
@@ -70,8 +70,7 @@ Run these checks for every release candidate.
 2. Python workflow completes one standards export.
 3. Python workflow completes one import from a workbook exported by the tool.
 4. Failure alert shows support log paths when the staged DLL is missing.
-5. Legacy WPF fallback still opens.
-6. Both `python-ui.log` and `backend.log` receive new entries.
+5. Both `python-ui.log` and `backend.log` receive new entries.
 
 ## Automated tests and limits
 

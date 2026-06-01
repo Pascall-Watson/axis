@@ -5,11 +5,10 @@ This folder contains the pyRevit extension wrapper used for the hybrid rollout.
 ## Commands
 
 - `Excel Exporter Importer`: Python-owned workflow for export/import using the C# interop backend.
-- `Excel Exporter Importer (Legacy WPF)`: original WPF fallback.
 
 ## Support logs
 
-Both commands write support logs under `%LOCALAPPDATA%\Axis\Logs`.
+The command writes support logs under `%LOCALAPPDATA%\Axis\Logs`.
 
 - `python-ui.log`: pyRevit command entry, workflow choice, user-facing failures.
 - `backend.log`: C# interop and backend workflow events, item-level failures, startup events.
@@ -18,4 +17,4 @@ When support is investigating an issue, ask for both files and the operation ID 
 
 ## Rollback shortcut
 
-If the Python workflow blocks production work, use the legacy WPF button immediately and restore the previously staged `axis/axis.extension/bin/Revit20xx` payload from backup.
+If the Python workflow blocks production work, restore the previously staged `axis/axis.extension/bin/Revit20xx` payload from backup and reload pyRevit.
