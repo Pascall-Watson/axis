@@ -99,21 +99,33 @@ def _run_export_schedules(doc, service, vm, operation_logger):
 
         total = len(selected_schedules)
         succeeded = 0
-        failed = 0
+        cancelled = 0
 
         for item in selected_schedules:
             file_path = os.path.join(export_folder, _build_schedule_export_file_name(item.Label))
             if not _confirm_overwrite(file_path, operation_logger, "schedule-export-cancelled-before-run"):
-                failed += 1
                 continue
 
             result = service.run_export_schedules(doc, file_path, [item.UniqueId])
             if result.Success and not result.IsCancelled:
                 succeeded += 1
-            else:
-                failed += 1
+            elif result.IsCancelled:
+                cancelled += 1
 
-        _status(vm, "Export complete. {0} of {1} schedules exported.".format(succeeded, total))
+        if succeeded == total:
+            _status(vm, "Export completed. {0} of {1} schedules exported.".format(succeeded, total))
+        elif cancelled == total:
+            _status(vm, "Export cancelled. No schedules exported.")
+        elif succeeded == 0:
+            _status(vm, "Export failed. Check support logs for details.")
+        else:
+            _status(
+                vm,
+                "Export partially completed. {0} of {1} schedules exported. Check support logs for details.".format(
+                    succeeded,
+                    total,
+                ),
+            )
         return
 
     if not vm.ExportPath:
@@ -197,7 +209,12 @@ def _run_import(doc, service, vm, operation_logger):
         operationId=result.OperationId,
     )
 
-    _status(vm, "Import completed.")
+    if result.IsCancelled:
+        _status(vm, "Import cancelled.")
+    elif result.Success:
+        _status(vm, "Import completed.")
+    else:
+        _status(vm, "Import failed. Check support logs for details.")
 
 
 def _build_action_handler(window, doc, service, vm, operation_logger):
