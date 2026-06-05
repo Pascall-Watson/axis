@@ -34,6 +34,11 @@
     </ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <MicrosoftExtensionsVersion Condition="'$(RevitYear)' == '2027'">10.0.0</MicrosoftExtensionsVersion>
+    <MicrosoftExtensionsVersion Condition="'$(MicrosoftExtensionsVersion)' == ''">8.0.0</MicrosoftExtensionsVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <OutputPath>bin\$(Configuration)\Revit$(RevitYear)\</OutputPath>
     <DefineConstants>TRACE;DEBUG;$(RevitSymbol)</DefineConstants>
@@ -51,15 +56,15 @@
     <PackageReference Include="EPPlusEnumerable" Version="1.1.0.0" />
     <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Ookii.Dialogs" Version="1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="$(MicrosoftExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

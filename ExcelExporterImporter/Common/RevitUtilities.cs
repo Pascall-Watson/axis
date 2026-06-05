@@ -19,11 +19,7 @@ namespace ExcelExporterImporter.Common
 
         private static int GetElementIdIntegerValue(ElementId elementId)
         {
-    #if REVIT2024
-            return elementId.IntegerValue;
-    #else
-            return (int) elementId.Value;
-    #endif
+            return checked((int) elementId.Value);
         }
 
         private static Element GetAnalyticalModelElement(Element element)

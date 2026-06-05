@@ -8,8 +8,8 @@ import uuid
 
 
 def _log_root():
-    base_path = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    return os.path.join(base_path, "Axis", "Logs")
+    base_path = os.environ.get("APPDATA") or os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(base_path, "Pascall-Watson", "Axis")
 
 
 def ensure_log_directory():

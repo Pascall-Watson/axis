@@ -1,6 +1,6 @@
 # Axis
 
-## pyRevit Hybrid (Revit 2024-2026)
+## pyRevit Hybrid (Revit 2024-2027)
 
 This repository now includes a hybrid migration scaffold under `axis/`:
 
@@ -15,13 +15,13 @@ Sprint 4 introduces a Python-owned pyRevit workflow for export/import using the 
 
 The extension now ships a single pyRevit command:
 
-- `Excel Exporter Importer` -> Python workflow (export schedules, export standards, import workbook)
+- `Excel Exporter Importer` -> Python workflow (export schedules, import workbook)
 
 ## Sprint 5: Deployment hardening
 
 Sprint 5 keeps the Python workflow as the extension entrypoint and adds supportability for office rollout:
 
-- Structured support logs for the pyRevit UI and the C# backend under `%LOCALAPPDATA%\Axis\Logs`.
+- Structured support logs for the pyRevit UI and the C# backend under `%APPDATA%\Pascall-Watson\Axis`.
 - Operation IDs surfaced in Python result dialogs for faster support triage.
 - Clearer summaries for export/import outcomes, including warnings, skips, and log file locations.
 - A log4net upgrade from `2.0.3` to `3.3.0` to address the previously flagged vulnerabilities.
@@ -155,23 +155,27 @@ What the staging script does:
 To stage only one supported Revit version:
 
 ```powershell
+./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitVersions 2024
 ./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitVersions 2025
 ./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitVersions 2026
+./scripts/Build-PyRevitHybrid.ps1 -Configuration Release -RevitVersions 2027
 ```
 
 ### Production-safe baseline workflow
 
 Use this sequence when validating the pyRevit-only launcher.
 
-1. From the repo root, back up the current staged payloads if you already have validated binaries under `axis/axis.extension/bin/Revit2025` or `axis/axis.extension/bin/Revit2026`.
+1. From the repo root, back up the current staged payloads if you already have validated binaries under `axis/axis.extension/bin/Revit2024`, `axis/axis.extension/bin/Revit2025`, `axis/axis.extension/bin/Revit2026`, or `axis/axis.extension/bin/Revit2027`.
 2. Run the staging script from PowerShell.
 3. Confirm the staged DLL exists for each target version:
-   - `axis/axis.extension/bin/Revit2025/net8.0-windows/ExcelExporterImporter.dll`
-   - `axis/axis.extension/bin/Revit2026/net8.0-windows/ExcelExporterImporter.dll`
+    - `axis/axis.extension/bin/Revit2024/net481/ExcelExporterImporter.dll`
+    - `axis/axis.extension/bin/Revit2025/net8.0-windows/ExcelExporterImporter.dll`
+    - `axis/axis.extension/bin/Revit2026/net8.0-windows/ExcelExporterImporter.dll`
+    - `axis/axis.extension/bin/Revit2027/net10.0-windows/ExcelExporterImporter.dll`
 4. Register the repo `axis` folder as a pyRevit extension source if it is not already registered.
 5. Reload pyRevit.
-6. Open Revit 2025 or Revit 2026 and run `Excel Tools > Excel Exporter > Excel Exporter Importer`.
-7. Confirm the Python workflow opens and you can choose Export Schedules, Export Standards, or Import Workbook.
+6. Open Revit 2024, Revit 2025, Revit 2026, or Revit 2027 and run `Excel Tools > Excel Exporter > Excel Exporter Importer`.
+7. Confirm the Python workflow opens and you can choose Export Schedules or Import Workbook.
 8. Confirm there is no legacy WPF fallback button exposed in the extension UI.
 
 ### Rollback
@@ -179,15 +183,15 @@ Use this sequence when validating the pyRevit-only launcher.
 If the staged hybrid payload needs to be rolled back:
 
 1. Close Revit.
-2. Restore your backup copies of `axis/axis.extension/bin/Revit2025` and `axis/axis.extension/bin/Revit2026`.
+2. Restore your backup copies of `axis/axis.extension/bin/Revit2024`, `axis/axis.extension/bin/Revit2025`, `axis/axis.extension/bin/Revit2026`, and `axis/axis.extension/bin/Revit2027`.
 3. If you need to remove the repo extension entirely, unregister the repo `axis` folder from pyRevit or disable that extension source in your pyRevit configuration.
 4. Reload pyRevit and reopen Revit.
 
-If you did not create a backup and only want to remove the staged hybrid payload, delete the affected `axis/axis.extension/bin/Revit2025` or `axis/axis.extension/bin/Revit2026` folder and restage a known-good build.
+If you did not create a backup and only want to remove the staged hybrid payload, delete the affected `axis/axis.extension/bin/Revit20xx` folder and restage a known-good build.
 
 ### Manual smoke tests
 
-Run these tests in both Revit 2025 and Revit 2026.
+Run these tests in each supported version (Revit 2024, Revit 2025, Revit 2026, and Revit 2027).
 
 1. Python workflow smoke test
    - Build and stage with `./scripts/Build-PyRevitHybrid.ps1 -Configuration Release`.
@@ -200,18 +204,13 @@ Run these tests in both Revit 2025 and Revit 2026.
    - Select at least one known-good schedule and complete export.
    - Confirm the file is created and opens in Excel.
 
-3. Export standards smoke test
-   - In the Python workflow, choose `Export Standards`.
-   - Select at least one standards group and complete export.
-   - Confirm the file is created and opens in Excel.
-
-4. Import smoke test
+3. Import smoke test
    - Start from a workbook created by the add-in in bidirectional mode.
    - Change one writable value only.
    - In the Python workflow, choose `Import Workbook` and import the updated sheet.
    - Confirm the updated value appears in Revit.
 
-5. Failure-path smoke test
+4. Failure-path smoke test
    - If the launcher fails, confirm the pyRevit alert reports the DLL path it loaded or the paths it searched, then follow the suggested rebuild and reload steps.
 
 ### Sprint 5 regression checks
@@ -219,9 +218,9 @@ Run these tests in both Revit 2025 and Revit 2026.
 Run these checks before widening rollout beyond a pilot group:
 
 1. Confirm `Excel Exporter Importer` still opens the Python chooser.
-2. Run one successful schedule export, one successful standards export, and one successful import. Confirm the result dialog includes a status, requested/succeeded/failed counts, and log file locations.
+2. Run one successful schedule export and one successful import. Confirm the result dialog includes a status, requested/succeeded/failed counts, and log file locations.
 3. Force one known failure path, such as selecting a locked workbook for import or temporarily removing the staged DLL. Confirm the alert includes next steps and the support log paths.
-4. Check `%LOCALAPPDATA%\Axis\Logs\python-ui.log` and `%LOCALAPPDATA%\Axis\Logs\backend.log` for a matching `operationId` on the failed or successful workflow.
+4. Check `%APPDATA%\Pascall-Watson\Axis\python-ui.log` and `%APPDATA%\Pascall-Watson\Axis\backend.log` for a matching `operationId` on the failed or successful workflow.
 5. Validate rollback by restoring a previously known-good staged payload and reloading pyRevit.
 
 ## Description

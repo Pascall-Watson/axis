@@ -22,10 +22,9 @@ namespace ExcelExporterImporter.Support
             get
             {
                 return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Axis",
-                    "ExcelExporterImporter",
-                    "Logs");
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Pascall-Watson",
+                    "Axis");
             }
         }
 

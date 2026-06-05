@@ -8,7 +8,7 @@ This folder contains the pyRevit extension wrapper used for the hybrid rollout.
 
 ## Support logs
 
-The command writes support logs under `%LOCALAPPDATA%\Axis\Logs`.
+The command writes support logs under `%APPDATA%\Pascall-Watson\Axis`.
 
 - `python-ui.log`: pyRevit command entry, workflow choice, user-facing failures.
 - `backend.log`: C# interop and backend workflow events, item-level failures, startup events.

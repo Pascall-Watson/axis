@@ -17,11 +17,7 @@ namespace ExcelExporterImporter.Common
 
         private static long GetElementIdValue(ElementId elementId)
         {
-    #if REVIT2024
-            return elementId.IntegerValue;
-    #else
             return elementId.Value;
-    #endif
         }
 
         /// <summary>
