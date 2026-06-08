@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -157,7 +157,7 @@ namespace ExcelExporterImporter.Common
         {
             foreach (var category in categories)
             {
-                if (category.Id.IntegerValue == Convert.ToInt32(id))
+                if (category.Id.Value == Convert.ToInt32(id))
                     return category;
 
                 if (category.SubCategories != null)

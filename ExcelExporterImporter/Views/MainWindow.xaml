@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         x:Class="ExcelExporterImporter.Views.MainWindow"
         Title="{Binding Title}" Height="800" Width="800" ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen" Icon="/ExcelExporterImporter;component/Resources/iconapp.ico"
+        WindowStartupLocation="CenterScreen"
         ShowInTaskbar="False" MinWidth="500">
 
     <Window.Resources>

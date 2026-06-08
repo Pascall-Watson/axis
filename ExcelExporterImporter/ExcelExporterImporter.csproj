@@ -1,6 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
+    <RevitSymbol>REVIT$(RevitVersion)</RevitSymbol>
+    <SupportedRevitVersions>2025;2026</SupportedRevitVersions>
+    <UseRevitNuGet Condition="'$(UseRevitNuGet)' == ''">false</UseRevitNuGet>
+    <RevitInstallRoot Condition="'$(RevitInstallRoot)' == ''">$(ProgramW6432)\Autodesk\Revit $(RevitVersion)</RevitInstallRoot>
     <DebugEngines>
       {351668CC-8477-4fbf-BFE3-5F1006E4DB1F}
     </DebugEngines>
@@ -13,10 +23,9 @@
     <Product>Export-Import Excel</Product>
     <Description>Synchronize data back and forth between Revit and Excel.</Description>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <AssemblyVersion>21.0.0.0</AssemblyVersion>
-    <FileVersion>21.0.0.0</FileVersion>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-   
+    <AssemblyVersion>$(RevitVersion).0.0.0</AssemblyVersion>
+    <FileVersion>$(RevitVersion).0.0.0</FileVersion>
+
   </PropertyGroup>
   <PropertyGroup>
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
@@ -24,13 +33,13 @@
     </ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;REVIT2021</DefineConstants>
+    <OutputPath>bin\$(Configuration)\Revit$(RevitVersion)\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;$(RevitSymbol)</DefineConstants>
     <DebugType>full</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;REVIT2021</DefineConstants>
+    <OutputPath>bin\$(Configuration)\Revit$(RevitVersion)\</OutputPath>
+    <DefineConstants>TRACE;$(RevitSymbol)</DefineConstants>
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
   <PropertyGroup>
@@ -43,43 +52,35 @@
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="4.5.3.2" />
     <PackageReference Include="EPPlusEnumerable" Version="1.1.0.0" />
-    <PackageReference Include="Revit.AdWindows.x64" Version="2021.0.0" />
-    <PackageReference Include="Revit.RevitApi.x64" Version="2021.0.0" />
-    <PackageReference Include="Revit.RevitApiUI.x64" Version="2021.0.0" />
-    <PackageReference Include="RevitApi2021" Version="21.0.0.383" />
     <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Ookii.Dialogs" Version="1.0" />
+    <!-- Explicit versions to resolve Microsoft.Extensions conflicts from log4net -->
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseRevitNuGet)' == 'true'">
+    <PackageReference Include="Revit.RevitApi.x64" Version="$(RevitVersion).0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseRevitNuGet)' != 'true'">
+    <Reference Include="RevitAPI">
+      <HintPath>$(RevitInstallRoot)\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="PresentationCore">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="PresentationFramework">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.configuration" />
-    <Reference Include="System.Configuration.Install">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.EnterpriseServices" />
-    <Reference Include="System.Security" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Web.Extensions" />
-    <Reference Include="System.Web.Services" />
-    <Reference Include="System.Windows.Forms">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Xaml">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="WindowsBase">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="WindowsFormsIntegration" />
+    <Compile Remove="Button.cs" />
+    <Compile Remove="Command.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Update="Resources.fr.Designer.cs">
       <DependentUpon>Resources.fr.resx</DependentUpon>
@@ -172,10 +173,6 @@
     <Resource Include="Resources\ToolIconHelpMini.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
-    <Content Include="Addin.addin">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Content>
     <Content Include="ImportExportExcel-Icon.ico" />
     <Content Include="MaterialAssetsSettings.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -234,10 +231,13 @@
       <DependentUpon>ButtonUserControl.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
-  <PropertyGroup>
-    <PostBuildEvent>
-      copy "$(MSBuildProjectDirectory)\addin.addin" "%25appdata%25\Autodesk\Revit\Addins\2021\$(MSBuildProjectName).addin"
-      xcopy "$(MSBuildProjectDirectory)\$(OutputPath)$(TargetFramework)\*" "%25appdata%25\Autodesk\Revit\Addins\2021\ExcelExporterImporter\" /S /E /R /I /F /Y
-    </PostBuildEvent>
-  </PropertyGroup>
+  <Target Name="ValidateRevitVersion" BeforeTargets="Build">
+    <Error
+      Condition="$([System.String]::Copy(';$(SupportedRevitVersions);').Contains(';$(RevitVersion);')) == false"
+      Text="Unsupported RevitVersion '$(RevitVersion)'. Supported versions: $(SupportedRevitVersions)." />
+
+    <Error
+      Condition="'$(UseRevitNuGet)' != 'true' and !Exists('$(RevitInstallRoot)\\RevitAPI.dll')"
+      Text="Revit API binaries were not found. Set RevitInstallRoot (current: '$(RevitInstallRoot)') to a valid Revit $(RevitVersion) install folder containing RevitAPI.dll." />
+  </Target>
 </Project>

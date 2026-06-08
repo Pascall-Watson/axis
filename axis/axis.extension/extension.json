@@ -1,0 +1,7 @@
+{
+  "name": "Excel Exporter Importer",
+  "type": "extension",
+  "description": "Hybrid pyRevit wrapper for ExcelExporterImporter C# logic.",
+  "author": "BIM One",
+  "builtin": false
+}

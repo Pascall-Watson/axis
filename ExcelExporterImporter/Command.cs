@@ -2,14 +2,12 @@
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
-using System.Windows.Interop;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Windows;
-using ExcelExporterImporter.Views;
+using ExcelExporterImporter.Interop;
+using ExcelExporterImporter.Support;
 using log4net;
-using IWin32Window = System.Windows.Forms.IWin32Window;
 
 namespace ExcelExporterImporter
 {
@@ -23,44 +21,50 @@ namespace ExcelExporterImporter
             ref string message,
             ElementSet elements)
         {
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
-            var uiapp = commandData.Application;
-            var uidoc = uiapp.ActiveUIDocument;
-            var doc = uidoc.Document;
+            SupportLog.EnsureConfigured();
+            var originalCulture = Thread.CurrentThread.CurrentCulture;
+            var originalUICulture = Thread.CurrentThread.CurrentUICulture;
 
             try
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
+                var uiapp = commandData.Application;
+                var uidoc = uiapp.ActiveUIDocument;
+                var doc = uidoc.Document;
+
                 if (doc == null)
                     return Result.Cancelled;
-                var dlg = new MainWindow(doc);
 
-                var window = new WindowInteropHelper(dlg);
-                window.Owner = ComponentManager.ApplicationWindow;
-                dlg.ShowDialog();
+                SupportLog.Info(
+                    "legacy-command-execute",
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "document", doc.Title },
+                        { "logFilePath", SupportLog.LogFilePath },
+                    });
+
+                ExcelExporterImporterInterop.ShowMainWindow(doc, uiapp.MainWindowHandle);
 
                 return Result.Succeeded;
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                SupportLog.Error(
+                    "legacy-command-failed",
+                    e,
+                    new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "message", e.Message },
+                    });
+                Logger.Error(e.Message, e);
                 return Result.Failed;
             }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCulture;
+                Thread.CurrentThread.CurrentUICulture = originalUICulture;
+            }
         }
-    }
-
-    internal class WindowWrapper : IWin32Window, IDisposable
-    {
-        public WindowWrapper(IntPtr handle)
-        {
-            Handle = handle;
-        }
-
-        public void Dispose()
-        {
-            Handle = IntPtr.Zero;
-        }
-
-        public IntPtr Handle { get; private set; }
     }
 }

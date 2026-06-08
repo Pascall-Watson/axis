@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Blend for Visual Studio Version 16
 VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter", "ExcelExporterImporter\ExcelExporterImporter.csproj", "{B9E745D9-D2C1-401B-84B0-F51359A0914F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter.2024", "ExcelExporterImporter\ExcelExporterImporter.2024.csproj", "{7F88D01B-A37A-4BA4-A0CB-8B2E3896A1A1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter.2025", "ExcelExporterImporter\ExcelExporterImporter.2025.csproj", "{B9E745D9-D2C1-401B-84B0-F51359A0914F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter.2026", "ExcelExporterImporter\ExcelExporterImporter.2026.csproj", "{5CFBE8FD-C96C-4D9D-9F20-A2A6E4E4C9D3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelExporterImporter.2027", "ExcelExporterImporter\ExcelExporterImporter.2027.csproj", "{8F86E766-577E-4D57-8D79-3F9A2F33E3F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelExporterImporter.Tests", "ExcelExporterImporter.Tests\ExcelExporterImporter.Tests.csproj", "{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +19,26 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F88D01B-A37A-4BA4-A0CB-8B2E3896A1A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F88D01B-A37A-4BA4-A0CB-8B2E3896A1A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F88D01B-A37A-4BA4-A0CB-8B2E3896A1A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F88D01B-A37A-4BA4-A0CB-8B2E3896A1A1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9E745D9-D2C1-401B-84B0-F51359A0914F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CFBE8FD-C96C-4D9D-9F20-A2A6E4E4C9D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CFBE8FD-C96C-4D9D-9F20-A2A6E4E4C9D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CFBE8FD-C96C-4D9D-9F20-A2A6E4E4C9D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CFBE8FD-C96C-4D9D-9F20-A2A6E4E4C9D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F86E766-577E-4D57-8D79-3F9A2F33E3F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F86E766-577E-4D57-8D79-3F9A2F33E3F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F86E766-577E-4D57-8D79-3F9A2F33E3F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F86E766-577E-4D57-8D79-3F9A2F33E3F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFA0B7D1-ED82-4B05-8A74-B9864B1A9C57}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

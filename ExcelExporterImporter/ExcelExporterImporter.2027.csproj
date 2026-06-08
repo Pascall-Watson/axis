@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <RevitYear>2027</RevitYear>
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="ExcelExporterImporter.paths.csproj" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="ExcelExporterImporter.base.csproj" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>
